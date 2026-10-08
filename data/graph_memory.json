@@ -1,0 +1,184 @@
+{
+  "rootGraphId": "ws_test_1rwr",
+  "rootGraphName": "test",
+  "rootGraphDescription": "testing",
+  "falkorConnected": false,
+  "falkorEndpoint": "embedded://falkordb-cypher-engine",
+  "availableModels": [
+    {
+      "id": "claude-3-7-sonnet",
+      "label": "Claude 3.7 Sonnet",
+      "provider": "Anthropic Claude",
+      "endpointRoute": "anthropic://claude-3-7-sonnet",
+      "contextBudgetTokens": 8192
+    },
+    {
+      "id": "claude-3-5-haiku",
+      "label": "Claude 3.5 Haiku",
+      "provider": "Anthropic Claude",
+      "endpointRoute": "anthropic://claude-3-5-haiku",
+      "contextBudgetTokens": 4096
+    },
+    {
+      "id": "gpt-4o",
+      "label": "ChatGPT (GPT-4o)",
+      "provider": "OpenAI ChatGPT",
+      "endpointRoute": "openai://gpt-4o",
+      "contextBudgetTokens": 8192
+    },
+    {
+      "id": "o3-mini",
+      "label": "ChatGPT (o3-mini)",
+      "provider": "OpenAI ChatGPT",
+      "endpointRoute": "openai://o3-mini",
+      "contextBudgetTokens": 8192
+    },
+    {
+      "id": "gemini-3.8-flash",
+      "label": "Gemini 3.8 Flash",
+      "provider": "Google Gemini",
+      "endpointRoute": "gemini://gemini-3.8-flash",
+      "contextBudgetTokens": 16384
+    },
+    {
+      "id": "gemini-3.1-flash-lite",
+      "label": "Gemini 3.1 Flash Lite",
+      "provider": "Google Gemini",
+      "endpointRoute": "gemini://gemini-3.1-flash-lite",
+      "contextBudgetTokens": 8192
+    },
+    {
+      "id": "llama-3.3-70b",
+      "label": "Llama 3.3 70B Instruct",
+      "provider": "Meta Llama",
+      "endpointRoute": "vllm://llama-3.3-70b-instruct",
+      "contextBudgetTokens": 8192
+    }
+  ],
+  "workflows": [],
+  "subtopics": [
+    {
+      "id": "sub_core",
+      "name": "Core Architecture & Context",
+      "domain": "Primary Knowledge",
+      "color": "#10B981",
+      "summary": "Initial root sub-topic partition for this workspace. Ingest documents, add custom sub-topics, or run agents to populate nodes.",
+      "version": 1,
+      "updatedAt": "2026-10-08T16:27:08.812Z",
+      "lastUpdatedBy": "agent_lead",
+      "lastUpdatedByModel": "Claude 3.7 Sonnet",
+      "summaryTokenCount": 47,
+      "fullTokenCount": 97,
+      "activeLeases": [],
+      "revisionHistory": [
+        {
+          "version": 1,
+          "summary": "Initial root sub-topic partition for this workspace. Ingest documents, add custom sub-topics, or run agents to populate nodes.",
+          "updatedByAgentId": "agent_lead",
+          "authoredByModel": "Claude 3.7 Sonnet",
+          "updatedAt": "2026-10-08T16:27:08.812Z",
+          "commitNote": "Workspace initialized"
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "node_welcome_1",
+      "subtopicId": "sub_core",
+      "title": "Workspace Root Anchor",
+      "content": "Workspace \"test\" initialized. Use \"Ingest Docs\" to auto-partition company documentation into graph sub-topics or connect external agents via the REST / MCP API.",
+      "kind": "Fact",
+      "confidence": 1,
+      "createdByAgentId": "agent_lead",
+      "authoredByModel": "Claude 3.7 Sonnet",
+      "updatedAt": "2026-10-08T16:27:08.812Z",
+      "tokenCount": 50
+    }
+  ],
+  "edges": [],
+  "savedPaths": [],
+  "agents": [
+    {
+      "id": "agent_lead",
+      "name": "Architect",
+      "role": "Lead Systems Agent",
+      "specialty": "Knowledge partitioning, graph updates, and cross-topic synthesis",
+      "accentColor": "#10B981",
+      "activeModelId": "claude-3-7-sonnet",
+      "activeModelLabel": "Claude 3.7 Sonnet",
+      "activeProvider": "Anthropic Claude",
+      "modelSwitchCount": 0,
+      "status": "idle",
+      "mountedSubtopicIds": [],
+      "activePathIds": [],
+      "totalTasksCompleted": 0,
+      "totalCommits": 1,
+      "lastActiveAt": "2026-10-08T16:27:08.812Z"
+    },
+    {
+      "id": "agent_reviewer",
+      "name": "Verifier",
+      "role": "Compliance & QA Agent",
+      "specialty": "Constraint verification, edge validation, and summary auditing",
+      "accentColor": "#38BDF8",
+      "activeModelId": "gpt-4o",
+      "activeModelLabel": "ChatGPT (GPT-4o)",
+      "activeProvider": "OpenAI ChatGPT",
+      "modelSwitchCount": 0,
+      "status": "idle",
+      "mountedSubtopicIds": [],
+      "activePathIds": [],
+      "totalTasksCompleted": 0,
+      "totalCommits": 0,
+      "lastActiveAt": "2026-10-08T16:27:08.812Z"
+    }
+  ],
+  "traceHistory": [
+    {
+      "id": "trace_init_1791476828812",
+      "stepNumber": 1,
+      "timestamp": "2026-10-08T16:27:08.812Z",
+      "agentId": "agent_lead",
+      "agentName": "Architect",
+      "activeModel": "Claude 3.7 Sonnet",
+      "phase": "INDEX_SCAN",
+      "summary": "Initialized workspace [test] with 1 root sub-topic.",
+      "detail": "Ready for document ingestion, custom agent workflows, and external SDK requests.",
+      "cypherQuery": "CREATE (g:RootGraph {id: 'ws_test_1rwr', name: \"test\"})-[:HAS_SUBTOPIC]->(:SubTopic {id: 'sub_core', name: 'Core Architecture & Context', version: 1})",
+      "activeTokensBefore": 28,
+      "activeTokensAfter": 28
+    }
+  ],
+  "runHistory": [],
+  "connectedIdeSessions": [
+    {
+      "id": "ide_claude_code_1",
+      "clientType": "Claude Code CLI",
+      "workspaceName": "test",
+      "repoBranch": "main",
+      "boundAgentId": "agent_lead",
+      "boundAgentName": "Architect",
+      "activeModel": "Claude 3.7 Sonnet",
+      "lastToolCalled": "tools/list",
+      "status": "connected",
+      "connectedAt": "2026-10-08T08:10:00Z",
+      "lastHeartbeatAt": "2026-10-08T16:55:06.731Z",
+      "totalCalls": 5
+    },
+    {
+      "id": "ide_openai_codex_1",
+      "clientType": "OpenAI Codex CLI",
+      "workspaceName": "test",
+      "repoBranch": "feat/graph-memory",
+      "boundAgentId": "agent_reviewer",
+      "boundAgentName": "Verifier",
+      "activeModel": "ChatGPT (o3-mini)",
+      "lastToolCalled": "engram_checkout_subtopic",
+      "status": "connected",
+      "connectedAt": "2026-10-08T08:15:00Z",
+      "lastHeartbeatAt": "2026-10-08T16:55:02.297Z",
+      "totalCalls": 3
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-display: 'Syne', sans-serif;
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #090C10;
+    color: #F1F5F9;
+    letter-spacing: 0.005em;
+    overflow-x: hidden;
+  }
+
+  h1, h2, .font-display {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+
+  code, pre, .font-mono, .tabular-nums {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Tactile bespoke interactive controls */
+.tactile-btn {
+  position: relative;
+  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1), background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+  box-shadow: 0 2px 0 0 rgba(255, 255, 255, 0.07) inset, 0 3px 0 0 #040608;
+}
+
+.tactile-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 0 0 rgba(255, 255, 255, 0.12) inset, 0 4px 0 0 #040608;
+}
+
+.tactile-btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset, 0 1px 0 0 #040608;
+}
+
+.tactile-emerald {
+  background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+  color: #03150E;
+  border: 1px solid #34D399;
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.35) inset, 0 3px 0 0 #064E3B;
+}
+
+.tactile-emerald:hover:not(:disabled) {
+  background: linear-gradient(180deg, #34D399 0%, #10B981 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.45) inset, 0 4px 0 0 #064E3B;
+}
+
+.tactile-emerald:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.2) inset, 0 1px 0 0 #064E3B;
+}
+
+.tactile-rose {
+  background: linear-gradient(180deg, #2A1219 0%, #190B0F 100%);
+  color: #FDA4AF;
+  border: 1px solid rgba(244, 63, 94, 0.45);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset, 0 3px 0 0 #090406;
+}
+
+.tactile-rose:hover:not(:disabled) {
+  background: linear-gradient(180deg, #381620 0%, #220D13 100%);
+  border-color: rgba(244, 63, 94, 0.75);
+  transform: translateY(-1px);
+}
+
+.tactile-rose:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 0 #090406;
+}

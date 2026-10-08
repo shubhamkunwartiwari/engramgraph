@@ -1,0 +1,6 @@
+{
+  "name": "EngramGraph — Multi-Agent Graph Memory Engine",
+  "description": "Persistent multi-agent memory engine powered by FalkorDB and Gemini with hierarchical sub-topic partitioning, summary indexing, and on-demand context paging.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
