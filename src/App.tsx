@@ -24,8 +24,6 @@ import {
 import {
   Plus,
   Database,
-  ArrowDownLeft,
-  ArrowUpRight,
   Play,
   Loader2,
   Route,
@@ -45,9 +43,12 @@ import {
   Copy,
   Check,
   Download,
+  BookOpen,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
-type ActiveView = 'home' | 'workflows' | 'builder' | 'sdk' | 'activity';
+type ActiveView = 'home' | 'readme' | 'workflows' | 'builder' | 'sdk' | 'activity';
 
 const QUICK_EXAMPLES = [
   {
@@ -77,6 +78,19 @@ const QUICK_EXAMPLES = [
 ];
 
 export default function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = window.localStorage.getItem('engram_theme');
+      if (saved === 'dark' || saved === 'light') return saved;
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    window.localStorage.setItem('engram_theme', theme);
+  }, [theme]);
+
   const [state, setState] = useState<GraphMemoryState | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +104,7 @@ export default function App() {
 
   // Command bar states
   const [taskPrompt, setTaskPrompt] = useState<string>(QUICK_EXAMPLES[0].prompt);
-  const [autoEvictOnFinish, setAutoEvictOnFinish] = useState<boolean>(true);
+  const [autoEvictOnFinish] = useState<boolean>(true);
   const [midRunSwapModelId, setMidRunSwapModelId] = useState<string>('');
   const [isRunningTask, setIsRunningTask] = useState<boolean>(false);
   const [runningWorkflowId, setRunningWorkflowId] = useState<string | null>(null);
@@ -165,7 +179,7 @@ export default function App() {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage((prev) => (prev === msg ? null : prev));
-    }, 3800);
+    }, 3500);
   }, []);
 
   const fetchGraphState = useCallback(async () => {
@@ -228,7 +242,7 @@ export default function App() {
       setSelectedAgentId(data.state.agents[0]?.id || '');
       setSelectedSubtopicId(data.state.subtopics[0]?.id || null);
       setHighlightedPathId(null);
-      triggerToast(`Switched to workspace [${data.state.rootGraphName}].`);
+      triggerToast(`Switched to [${data.state.rootGraphName}].`);
     } catch (err: any) {
       triggerToast(`Error: ${err.message}`);
     }
@@ -251,7 +265,7 @@ export default function App() {
     setSelectedSubtopicId(data.state.subtopics[0]?.id || null);
     setHighlightedPathId(null);
     setActiveView('home');
-    triggerToast(`Created workspace [${data.state.rootGraphName}].`);
+    triggerToast(`Created project [${data.state.rootGraphName}].`);
   };
 
   const handleIngestDocument = async (payload: {
@@ -275,7 +289,7 @@ export default function App() {
     }
     setActiveView('home');
     triggerToast(
-      `Partitioned "${payload.documentTitle}" into ${data.createdSubtopics.length} sub-topics & ${data.createdNodesCount} nodes.`
+      `Split "${payload.documentTitle}" into ${data.createdSubtopics.length} sub-topic bubbles.`
     );
   };
 
@@ -289,9 +303,7 @@ export default function App() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Model switch failed');
       setState(data.state);
-      triggerToast(
-        `Switched to ${data.newModel} — 0 context lost (${data.preservedSubtopics.length} topics & ${data.preservedPaths.length} paths kept).`
-      );
+      triggerToast(`Switched to ${data.newModel} — 0 context lost.`);
     } catch (err: any) {
       triggerToast(`Error: ${err.message}`);
     }
@@ -312,7 +324,7 @@ export default function App() {
       if (!res.ok) throw new Error(data.error || 'Checkout failed');
       setState(data.state);
       setSelectedSubtopicId(subtopicId);
-      triggerToast(`Pulled [${data.subtopic?.name || subtopicId}] into ${activeAgent?.name}'s memory.`);
+      triggerToast(`Pulled [${data.subtopic?.name || subtopicId}] into ${activeAgent?.name}.`);
     } catch (err: any) {
       triggerToast(`Error: ${err.message}`);
     }
@@ -378,7 +390,7 @@ export default function App() {
       setState(data.state);
       setLatestRun(data.run);
       triggerToast(
-        `Finished (${data.run.steps.length} graph steps across ${data.run.modelsUsed?.join(' → ')}).`
+        `Completed (${data.run.steps.length} steps across ${data.run.modelsUsed?.join(' → ')}).`
       );
     } catch (err: any) {
       triggerToast(`Error: ${err.message}`);
@@ -407,7 +419,7 @@ export default function App() {
       setState(data.state);
       setCustomModelId('');
       setCustomModelLabel('');
-      triggerToast(`Registered model [${data.model.label}] — available across all agents & workflows.`);
+      triggerToast(`Added model [${data.model.label}].`);
     } catch (err: any) {
       triggerToast(`Error: ${err.message}`);
     }
@@ -434,7 +446,7 @@ export default function App() {
       setNewAgentName('');
       setNewAgentRole('');
       setNewAgentSpecialty('');
-      triggerToast(`Created agent [${data.agent.name}] on ${data.agent.activeModelLabel}.`);
+      triggerToast(`Created agent [${data.agent.name}].`);
     } catch (err: any) {
       triggerToast(`Error: ${err.message}`);
     }
@@ -449,7 +461,7 @@ export default function App() {
       if (selectedAgentId === agentId && data.state.agents[0]) {
         setSelectedAgentId(data.state.agents[0].id);
       }
-      triggerToast('Agent removed from workspace.');
+      triggerToast('Agent removed.');
     } catch (err: any) {
       triggerToast(`Error: ${err.message}`);
     }
@@ -490,7 +502,7 @@ export default function App() {
       setLatestRun(data.run);
       setActiveView('home');
       triggerToast(
-        `Workflow complete (${data.run.steps.length} steps across ${data.run.modelsUsed.join(' → ')}).`
+        `Workflow finished (${data.run.steps.length} steps across ${data.run.modelsUsed.join(' → ')}).`
       );
     } catch (err: any) {
       triggerToast(`Error: ${err.message}`);
@@ -505,7 +517,7 @@ export default function App() {
       const data = await res.json();
       if (res.ok && data.state) {
         setState(data.state);
-        triggerToast('Workflow deleted.');
+        triggerToast('Workflow removed.');
       }
     } catch (err: any) {
       triggerToast(`Error: ${err.message}`);
@@ -588,7 +600,7 @@ export default function App() {
     a.download = `${state.rootGraphId}_engram_workspace.json`;
     a.click();
     URL.revokeObjectURL(url);
-    triggerToast('Exported workspace JSON snapshot.');
+    triggerToast('Exported workspace JSON.');
   };
 
   const handleExecuteMcpTool = async (
@@ -628,9 +640,7 @@ export default function App() {
         delete data._stateSnapshot;
       }
       setLiveApiResponse(JSON.stringify(data, null, 2));
-      triggerToast(
-        `[${simIdeClient}] executed MCP ${toolName || method} on ${activeAgent.name}.`
-      );
+      triggerToast(`[${simIdeClient}] ran ${toolName || method}.`);
     } catch (err: any) {
       triggerToast(`MCP Error: ${err.message}`);
     } finally {
@@ -646,15 +656,15 @@ export default function App() {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-    triggerToast(`Downloaded ${filename} for your repo root.`);
+    triggerToast(`Downloaded ${filename}.`);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#090C10] text-slate-100 flex items-center justify-center p-6">
-        <div className="w-full max-w-sm space-y-3 border border-slate-800 bg-[#0F1522] p-6 rounded-lg">
-          <div className="h-4 w-36 bg-slate-800 animate-pulse rounded" />
-          <div className="h-3 w-full bg-slate-800/70 animate-pulse rounded" />
+      <div className="min-h-screen theme-app flex items-center justify-center p-6">
+        <div className="w-full max-w-sm space-y-3 rounded-3xl theme-surface p-6">
+          <div className="h-4 w-36 bg-emerald-500/20 animate-pulse rounded-full" />
+          <div className="h-3 w-full bg-slate-500/15 animate-pulse rounded-full" />
         </div>
       </div>
     );
@@ -662,14 +672,14 @@ export default function App() {
 
   if (error || !state || !activeAgent) {
     return (
-      <div className="min-h-screen bg-[#090C10] text-slate-100 flex items-center justify-center p-6">
-        <div className="max-w-md border border-rose-500/40 bg-[#0F1522] p-6 rounded-lg space-y-4">
-          <h1 className="text-base font-semibold text-white">Graph Engine Offline</h1>
-          <p className="text-xs text-slate-300">{error}</p>
+      <div className="min-h-screen theme-app flex items-center justify-center p-6">
+        <div className="max-w-md rounded-3xl theme-surface p-6 space-y-4">
+          <h1 className="text-base font-bold">Graph Engine Offline</h1>
+          <p className="text-xs theme-text-secondary">{error}</p>
           <button
             type="button"
             onClick={fetchGraphState}
-            className="tactile-emerald px-4 py-2 rounded-md text-xs font-semibold"
+            className="bubble-emerald px-5 py-2 text-xs font-semibold"
           >
             Reconnect
           </button>
@@ -712,19 +722,15 @@ Live Graph Endpoint: ${originUrl}
     'claude_code' | 'openai_codex' | 'cursor_vscode' | 'typescript' | 'python',
     string
   > = {
-    claude_code: `# 1. Download the zero-dependency MCP Stdio Bridge into your repository
+    claude_code: `# 1. Download the zero-dependency MCP Bridge into your repo
 curl -sL "${originUrl}/api/ide/engram-mcp-bridge.mjs?origin=${encodeURIComponent(originUrl)}&agentId=${activeAgent.id}" -o engram-mcp-bridge.mjs
 
-# 2. Register EngramGraph with Claude Code CLI in 1 command
-claude mcp add engram-memory -e ENGRAM_URL="${originUrl}" -e ENGRAM_CLIENT="Claude Code CLI" -- node ./engram-mcp-bridge.mjs
-
-# 3. Verify inside Claude Code
-# Run \`claude\` and type: /mcp
-# Available tools: engram_get_index, engram_checkout_subtopic, engram_commit_memory, engram_release_subtopic, engram_switch_model`,
-    openai_codex: `# 1. Download the MCP Bridge & AGENTS.md into your repository root
+# 2. Connect Claude Code CLI in 1 command
+claude mcp add engram-memory -e ENGRAM_URL="${originUrl}" -e ENGRAM_CLIENT="Claude Code CLI" -- node ./engram-mcp-bridge.mjs`,
+    openai_codex: `# 1. Download the MCP Bridge & AGENTS.md into your repo
 curl -sL "${originUrl}/api/ide/engram-mcp-bridge.mjs?origin=${encodeURIComponent(originUrl)}&agentId=${activeAgent.id}" -o engram-mcp-bridge.mjs
 
-# 2. Add to ~/.codex/config.json (or codex.json in repo root)
+# 2. Add to ~/.codex/config.json
 {
   "model": "o3-mini",
   "mcpServers": {
@@ -737,11 +743,8 @@ curl -sL "${originUrl}/api/ide/engram-mcp-bridge.mjs?origin=${encodeURIComponent
       }
     }
   }
-}
-
-# 3. Launch OpenAI Codex CLI with shared graph memory
-codex "Scan EngramGraph index, checkout ${sampleSubId}, and audit our implementation"`,
-    cursor_vscode: `// Save as .cursor/mcp.json (Cursor) or .vscode/mcp.json (VS Code Copilot) or ~/.codeium/windsurf/mcp_config.json
+}`,
+    cursor_vscode: `// Save as .cursor/mcp.json (Cursor) or .vscode/mcp.json (VS Code)
 {
   "mcpServers": {
     "engram-falkordb-memory": {
@@ -754,53 +757,44 @@ codex "Scan EngramGraph index, checkout ${sampleSubId}, and audit our implementa
     }
   }
 }`,
-    typescript: `// EngramGraph TypeScript SDK — Works with Claude, OpenAI, Gemini, or LangGraph
-const ENGRAM_URL = "${originUrl}";
+    typescript: `const ENGRAM_URL = "${originUrl}";
 const AGENT_ID = "${activeAgent.id}";
 
-// 1. Fetch lightweight Sub-Topic Summary Index & Shared Graph Paths
+// 1. Read lightweight Sub-Topic Summaries
 const index = await fetch(\`\${ENGRAM_URL}/api/v1/index?agentId=\${AGENT_ID}\`).then(r => r.json());
 
-// 2. Pull a specific Sub-Topic into working memory on demand
+// 2. Pull a Sub-Topic on demand
 const mounted = await fetch(\`\${ENGRAM_URL}/api/v1/checkout\`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ agentId: AGENT_ID, subtopicId: "${sampleSubId}", reason: "Inspecting nodes" })
+  body: JSON.stringify({ agentId: AGENT_ID, subtopicId: "${sampleSubId}" })
 }).then(r => r.json());
 
-// 3. Return Sub-Topic back to FalkorDB when done
+// 3. Send Sub-Topic back to graph when finished
 await fetch(\`\${ENGRAM_URL}/api/v1/release\`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ agentId: AGENT_ID, subtopicId: "${sampleSubId}", reason: "Task complete" })
+  body: JSON.stringify({ agentId: AGENT_ID, subtopicId: "${sampleSubId}" })
 });`,
-    python: `# EngramGraph Python Client — Plug into CrewAI, AutoGen, OpenAI, or Anthropic
-import requests
+    python: `import requests
 
 ENGRAM_URL = "${originUrl}"
 AGENT_ID = "${activeAgent.id}"
 
-# 1. Load only the Sub-Topic Summary Directory + Saved Multi-Hop Paths
+# 1. Read Sub-Topic Summaries
 index = requests.get(f"{ENGRAM_URL}/api/v1/index", params={"agentId": AGENT_ID}).json()
 
-# 2. Checkout full nodes for a specific sub-topic only when needed
-sub = requests.post(f"{ENGRAM_URL}/api/v1/checkout", json={
-    "agentId": AGENT_ID,
-    "subtopicId": "${sampleSubId}",
-    "reason": "Need domain context for current step"
-}).json()
+# 2. Pull Sub-Topic on demand
+sub = requests.post(f"{ENGRAM_URL}/api/v1/checkout", json={"agentId": AGENT_ID, "subtopicId": "${sampleSubId}"}).json()
 
-# 3. Release back to graph to keep LLM token window minimal
-requests.post(f"{ENGRAM_URL}/api/v1/release", json={
-    "agentId": AGENT_ID,
-    "subtopicId": "${sampleSubId}"
-})`,
+# 3. Release back to FalkorDB
+requests.post(f"{ENGRAM_URL}/api/v1/release", json={"agentId": AGENT_ID, "subtopicId": "${sampleSubId}"})`,
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#090C10] text-slate-100">
+    <div className="min-h-screen flex flex-col theme-app">
       {/* Strict 3-Zone Top Bar Contract */}
-      <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3.5 border-b border-slate-800/80 bg-[#090C10]/95 backdrop-blur">
+      <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3.5 border-b border-slate-500/15 theme-surface backdrop-blur">
         {/* Zone 1: Single text element wordmark */}
         <a
           href="#home"
@@ -808,42 +802,53 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
             e.preventDefault();
             setActiveView('home');
           }}
-          className="font-display text-lg font-bold tracking-tight text-white whitespace-nowrap"
+          className="font-display text-lg font-bold tracking-tight whitespace-nowrap"
         >
           EngramGraph
         </a>
 
-        {/* Zone 2: 5 Clean text navigation links */}
-        <nav className="hidden md:flex items-center gap-7 text-xs font-medium text-slate-400">
+        {/* Zone 2: Clean text navigation links */}
+        <nav className="hidden md:flex items-center gap-7 text-xs font-semibold theme-text-secondary">
           <button
             type="button"
             onClick={() => setActiveView('home')}
             className={`py-1 transition-colors whitespace-nowrap ${
               activeView === 'home'
-                ? 'text-white underline decoration-emerald-400 decoration-2 underline-offset-8'
-                : 'hover:text-slate-100'
+                ? 'text-emerald-500 underline decoration-emerald-500 decoration-2 underline-offset-8'
+                : 'hover:opacity-80'
             }`}
           >
-            Graph Stage
+            Graph Home
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveView('readme')}
+            className={`py-1 transition-colors whitespace-nowrap ${
+              activeView === 'readme'
+                ? 'text-emerald-500 underline decoration-emerald-500 decoration-2 underline-offset-8'
+                : 'hover:opacity-80'
+            }`}
+          >
+            README Guide
           </button>
           <button
             type="button"
             onClick={() => setActiveView('workflows')}
             className={`py-1 transition-colors whitespace-nowrap ${
               activeView === 'workflows'
-                ? 'text-white underline decoration-emerald-400 decoration-2 underline-offset-8'
-                : 'hover:text-slate-100'
+                ? 'text-emerald-500 underline decoration-emerald-500 decoration-2 underline-offset-8'
+                : 'hover:opacity-80'
             }`}
           >
-            Workflows ({state.workflows?.length || 0})
+            Workflows
           </button>
           <button
             type="button"
             onClick={() => setActiveView('builder')}
             className={`py-1 transition-colors whitespace-nowrap ${
               activeView === 'builder'
-                ? 'text-white underline decoration-emerald-400 decoration-2 underline-offset-8'
-                : 'hover:text-slate-100'
+                ? 'text-emerald-500 underline decoration-emerald-500 decoration-2 underline-offset-8'
+                : 'hover:opacity-80'
             }`}
           >
             Models & Agents
@@ -853,39 +858,39 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
             onClick={() => setActiveView('sdk')}
             className={`py-1 transition-colors whitespace-nowrap ${
               activeView === 'sdk'
-                ? 'text-white underline decoration-emerald-400 decoration-2 underline-offset-8'
-                : 'hover:text-slate-100'
+                ? 'text-emerald-500 underline decoration-emerald-500 decoration-2 underline-offset-8'
+                : 'hover:opacity-80'
             }`}
           >
-            IDEs & CLI (MCP)
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveView('activity')}
-            className={`py-1 transition-colors whitespace-nowrap ${
-              activeView === 'activity'
-                ? 'text-white underline decoration-emerald-400 decoration-2 underline-offset-8'
-                : 'hover:text-slate-100'
-            }`}
-          >
-            Cypher Log ({state.traceHistory.length})
+            Connect IDE
           </button>
         </nav>
 
-        {/* Zone 3: 2 Tactile Primary Actions */}
+        {/* Zone 3: Theme Toggle + New Sub-Topic Action */}
         <div className="flex items-center gap-2.5">
           <button
             type="button"
-            onClick={() => setIsIngestModalOpen(true)}
-            className="tactile-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-medium bg-[#141C2B] border border-slate-700/80 text-slate-200 hover:text-white whitespace-nowrap"
+            onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
+            className="bubble-btn inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold whitespace-nowrap"
+            title="Toggle White / Dark Theme"
           >
-            <FileText className="w-3.5 h-3.5 text-emerald-400" />
-            Ingest Docs
+            {theme === 'light' ? (
+              <>
+                <Moon className="w-3.5 h-3.5 text-slate-600" />
+                <span>Dark</span>
+              </>
+            ) : (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <span>Light</span>
+              </>
+            )}
           </button>
+
           <button
             type="button"
             onClick={() => setIsNewSubtopicOpen(true)}
-            className="tactile-emerald inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap"
+            className="bubble-emerald inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold whitespace-nowrap"
           >
             <Plus className="w-3.5 h-3.5" />
             New Sub-Topic
@@ -893,51 +898,47 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
         </div>
       </header>
 
-      {/* Workspace Body: Left Sidebar + Open Center Stage */}
-      <div className="flex-1 flex flex-col lg:flex-row max-w-[1440px] w-full mx-auto">
-        {/* Left Sidebar (275px on desktop) */}
-        <aside className="w-full lg:w-[275px] shrink-0 border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-[#0B0F17] p-5 flex flex-col justify-between gap-6">
+      {/* Open Workspace Body: Clean Left Sidebar + Spacious Center Stage */}
+      <div className="flex-1 flex flex-col lg:flex-row max-w-[1440px] w-full mx-auto gap-6 p-4 sm:p-6">
+        {/* Clean, Bubbly Left Sidebar */}
+        <aside className="w-full lg:w-[255px] shrink-0 rounded-3xl theme-surface p-5 flex flex-col justify-between gap-6 h-fit">
           <div className="space-y-6">
-            {/* Multi-Workspace Project Switcher */}
-            <div className="space-y-2 pb-4 border-b border-slate-800/80">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-slate-500">
-                  Corporate Workspace
-                </span>
+            {/* Project Selector */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-semibold theme-text-muted">Project</span>
                 <button
                   type="button"
                   onClick={() => setIsNewWorkspaceOpen(true)}
-                  className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 font-medium"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-500 hover:underline"
                 >
-                  <FolderPlus className="w-3 h-3" />
-                  New Project
+                  <FolderPlus className="w-3.5 h-3.5" />
+                  New
                 </button>
               </div>
               <select
-                aria-label="Select Workspace"
+                aria-label="Select Project Workspace"
                 value={state.rootGraphId}
                 onChange={(e) => handleSwitchWorkspace(e.target.value)}
-                className="w-full bg-[#111724] border border-slate-800 rounded-md px-3 py-2 text-xs font-medium text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
+                className="w-full rounded-2xl theme-elevated px-3.5 py-2.5 text-xs font-semibold focus:outline-none cursor-pointer"
               >
                 {(state.workspaces || []).map((ws) => (
                   <option key={ws.id} value={ws.id}>
-                    {ws.name} ({ws.subtopicCount} topics)
+                    {ws.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Platform Views */}
-            <div className="space-y-1">
-              <div className="text-[11px] font-medium text-slate-500 px-2 pb-1">
-                Platform Modules
-              </div>
+            {/* Primary Navigation Bubbles */}
+            <div className="space-y-1.5">
               {[
-                { id: 'home', label: 'Home Graph Stage', icon: Compass },
-                { id: 'workflows', label: 'Workflow Pipelines', icon: GitBranch },
-                { id: 'builder', label: 'Bring Your Own Models', icon: Cpu },
-                { id: 'sdk', label: 'Claude Code, Codex & IDEs', icon: Code2 },
-                { id: 'activity', label: 'Cypher & Swap Log', icon: Activity },
+                { id: 'home', label: 'Graph Home', icon: Compass },
+                { id: 'readme', label: 'README & Guide', icon: BookOpen },
+                { id: 'workflows', label: 'Workflows', icon: GitBranch },
+                { id: 'builder', label: 'Models & Agents', icon: Cpu },
+                { id: 'sdk', label: 'Claude Code & Codex', icon: Code2 },
+                { id: 'activity', label: 'Cypher Log', icon: Activity },
               ].map((item) => {
                 const Icon = item.icon;
                 const active = activeView === item.id;
@@ -946,201 +947,148 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                     key={item.id}
                     type="button"
                     onClick={() => setActiveView(item.id as ActiveView)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors ${
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-all ${
                       active
-                        ? 'bg-[#162032] text-white border border-slate-700/70'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-[#111724]'
+                        ? 'bg-emerald-500 text-slate-950 shadow-xs'
+                        : 'theme-text-secondary hover:opacity-85'
                     }`}
                   >
-                    <Icon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <Icon className="w-4 h-4 shrink-0" />
                     <span>{item.label}</span>
                   </button>
                 );
               })}
             </div>
 
-            {/* Saved Multi-Agent Workflows */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between px-2">
-                <span className="text-[11px] font-medium text-slate-500">
-                  Saved Workflows
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setActiveView('workflows')}
-                  className="text-[11px] text-emerald-400 hover:underline"
-                >
-                  + Build
-                </button>
+            {/* 1-Click Quick Demos */}
+            <div className="space-y-2 pt-2 border-t border-slate-500/15">
+              <div className="text-xs font-semibold theme-text-muted px-1">
+                1-Click Examples
               </div>
               <div className="space-y-2">
-                {(state.workflows || []).slice(0, 3).map((wf) => {
-                  const isRunningThis = runningWorkflowId === wf.id;
-                  return (
-                    <button
-                      key={wf.id}
-                      type="button"
-                      disabled={Boolean(runningWorkflowId) || isRunningTask}
-                      onClick={() => handleRunWorkflow(wf.id)}
-                      className="tactile-btn w-full text-left p-2.5 rounded-md bg-[#111724] border border-slate-800 hover:border-slate-600 transition-colors group"
-                    >
-                      <div className="flex items-center justify-between text-xs font-semibold text-slate-200 group-hover:text-emerald-300">
-                        <span className="truncate">{wf.name}</span>
-                        {isRunningThis ? (
-                          <Loader2 className="w-3 h-3 text-emerald-400 animate-spin shrink-0" />
-                        ) : (
-                          <Play className="w-3 h-3 text-emerald-400 shrink-0" />
-                        )}
-                      </div>
-                      <div className="text-[10px] font-mono text-slate-500 mt-0.5">
-                        {wf.stages.length} stages · 1-click run
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Connected IDE & CLI Sessions (Claude Code, OpenAI Codex, Cursor) */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between px-2">
-                <span className="text-[11px] font-medium text-slate-500">
-                  Connected IDEs & CLIs
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setActiveView('sdk')}
-                  className="text-[11px] text-emerald-400 hover:underline"
-                >
-                  + Connect
-                </button>
-              </div>
-              <div className="space-y-1.5">
-                {(state.connectedIdeSessions || []).slice(0, 3).map((sess) => (
+                {QUICK_EXAMPLES.map((ex, i) => (
                   <button
-                    key={sess.id}
+                    key={i}
                     type="button"
+                    disabled={isRunningTask}
                     onClick={() => {
-                      setSimIdeClient(sess.clientType);
-                      setActiveView('sdk');
+                      setActiveView('home');
+                      setTaskPrompt(ex.prompt);
+                      if (ex.agents[0]) setSelectedAgentId(ex.agents[0]);
+                      handleRunTask(ex.prompt, ex.agents, ex.swapTo);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-md bg-[#0E131D] border border-slate-800/80 hover:border-slate-700 transition-colors"
+                    className="w-full text-left p-3 rounded-2xl theme-elevated hover:border-emerald-500/60 transition-all group"
                   >
-                    <div className="flex items-center justify-between text-xs font-medium text-slate-200">
-                      <span className="truncate">{sess.clientType}</span>
-                      <span className="font-mono text-[10px] text-emerald-400">
-                        {sess.totalCalls} calls
-                      </span>
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span>{ex.title}</span>
+                      <Play className="w-3 h-3 text-emerald-500 shrink-0" />
                     </div>
-                    <div className="font-mono text-[10px] text-slate-500 mt-0.5 truncate">
-                      {sess.boundAgentName} · {sess.lastToolCalled}
-                    </div>
+                    <p className="text-[11px] theme-text-secondary mt-0.5">{ex.subtitle}</p>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Shared Multi-Hop Graph Paths */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between px-2">
-                <span className="text-[11px] font-medium text-slate-500">
-                  Shared Graph Paths
-                </span>
-                {highlightedPathId && (
-                  <button
-                    type="button"
-                    onClick={() => setHighlightedPathId(null)}
-                    className="text-[10px] font-mono text-amber-400 hover:underline"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                {state.savedPaths.slice(0, 3).map((p) => {
-                  const isSelected = highlightedPathId === p.id;
-                  return (
+            {/* Shared Graph Paths */}
+            {state.savedPaths.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-slate-500/15">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs font-semibold theme-text-muted">
+                    Saved Paths
+                  </span>
+                  {highlightedPathId && (
                     <button
-                      key={p.id}
                       type="button"
-                      onClick={() => {
-                        setActiveView('home');
-                        setHighlightedPathId(isSelected ? null : p.id);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-xs border transition-colors ${
-                        isSelected
-                          ? 'bg-amber-500/15 border-amber-500/50 text-amber-200'
-                          : 'bg-[#0E131D] border-slate-800/80 text-slate-300 hover:border-slate-700'
-                      }`}
+                      onClick={() => setHighlightedPathId(null)}
+                      className="text-[11px] text-amber-500 font-semibold hover:underline"
                     >
-                      <div className="flex items-center gap-1.5 font-medium truncate">
-                        <Route className="w-3 h-3 text-amber-400 shrink-0" />
-                        <span className="truncate">{p.title}</span>
-                      </div>
-                      <div className="font-mono text-[10px] text-slate-500 mt-0.5 truncate">
-                        {p.authoredByModel} · {p.nodeIds.length} hops
-                      </div>
+                      Clear
                     </button>
-                  );
-                })}
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  {state.savedPaths.slice(0, 3).map((p) => {
+                    const isSelected = highlightedPathId === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveView('home');
+                          setHighlightedPathId(isSelected ? null : p.id);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-2xl text-xs border transition-all ${
+                          isSelected
+                            ? 'border-amber-500 bg-amber-500/10 font-semibold'
+                            : 'theme-elevated'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 truncate">
+                          <Route className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          <span className="truncate">{p.title}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Sidebar Bottom Utility Controls */}
-          <div className="space-y-2 pt-4 border-t border-slate-800/80">
+          {/* Sidebar Bottom Actions */}
+          <div className="space-y-2 pt-4 border-t border-slate-500/15">
             {totalMountedCount > 0 && (
               <button
                 type="button"
                 onClick={handleReleaseAllLeases}
-                className="tactile-rose w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium"
+                className="bubble-rose w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                Return All Topics ({totalMountedCount})
+                Return All ({totalMountedCount})
               </button>
             )}
-            <div className="flex items-center justify-between gap-2">
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setIsIngestModalOpen(true)}
+                className="bubble-btn flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold"
+              >
+                <FileText className="w-3.5 h-3.5 text-emerald-500" />
+                Ingest Docs
+              </button>
               <button
                 type="button"
                 onClick={() => setIsFalkorDrawerOpen(true)}
-                className="tactile-btn flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded bg-[#111724] border border-slate-800 text-[11px] text-slate-300 hover:text-white"
+                className="bubble-btn flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold"
               >
-                <Database className="w-3 h-3 text-emerald-400" />
+                <Database className="w-3.5 h-3.5 text-emerald-500" />
                 FalkorDB
-              </button>
-              <button
-                type="button"
-                onClick={handleExportWorkspaceJson}
-                className="tactile-btn flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded bg-[#111724] border border-slate-800 text-[11px] text-slate-300 hover:text-white"
-              >
-                <Download className="w-3 h-3 text-emerald-400" />
-                Export JSON
               </button>
             </div>
           </div>
         </aside>
 
-        {/* Open Center Stage */}
-        <main className="flex-1 p-5 sm:p-8 space-y-6 overflow-y-auto">
-          {/* Subtle Toast Notification */}
+        {/* Spacious Center Stage */}
+        <main className="flex-1 space-y-6 min-w-0">
+          {/* Friendly Bubble Toast */}
           {toastMessage && (
-            <div className="border border-emerald-500/40 bg-emerald-950/40 px-4 py-2.5 rounded-md text-xs text-emerald-200 flex items-center justify-between">
+            <div className="rounded-full theme-surface border-emerald-500/40 px-5 py-2.5 text-xs font-medium flex items-center justify-between">
               <span>{toastMessage}</span>
               <button
                 type="button"
                 onClick={() => setToastMessage(null)}
-                className="text-emerald-400 hover:text-white font-mono ml-4"
+                className="text-emerald-500 font-semibold ml-4 hover:underline"
               >
-                Close
+                Dismiss
               </button>
             </div>
           )}
 
-          {/* Active Agent + Zero-Loss Model Switcher Bar */}
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border border-slate-800/90 bg-[#0D121C] p-4 rounded-lg">
-            {/* Agent Selector Buttons */}
+          {/* Top Agent & Model Switcher Bubble Bar */}
+          <div className="rounded-3xl theme-surface p-4 flex flex-wrap items-center justify-between gap-4">
+            {/* Agent Bubbles */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-slate-400 mr-1">Agent:</span>
               {state.agents.map((ag) => {
                 const isSelected = ag.id === activeAgent.id;
                 const count = ag.mountedSubtopicIds.length;
@@ -1149,73 +1097,64 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                     key={ag.id}
                     type="button"
                     onClick={() => setSelectedAgentId(ag.id)}
-                    className={`tactile-btn px-3.5 py-1.5 rounded-md text-xs font-medium border flex items-center gap-2 ${
+                    className={`px-4 py-2 rounded-full text-xs font-semibold transition-all flex items-center gap-2 ${
                       isSelected
-                        ? 'bg-[#182438] border-emerald-400/60 text-white'
-                        : 'bg-[#111724] border-slate-800 text-slate-400 hover:text-slate-200'
+                        ? 'bubble-emerald'
+                        : 'bubble-btn'
                     }`}
                   >
                     <span>{ag.name}</span>
-                    <span className="font-mono text-[10px] text-emerald-400 tabular-nums">
-                      {count > 0 ? `${count} loaded` : 'summary'}
-                    </span>
+                    {count > 0 && (
+                      <span className="font-mono text-[10px] opacity-90">
+                        ({count} loaded)
+                      </span>
+                    )}
                   </button>
                 );
               })}
-              <button
-                type="button"
-                onClick={() => setActiveView('builder')}
-                className="px-2.5 py-1.5 rounded-md text-xs text-emerald-400 hover:text-emerald-300 border border-dashed border-slate-700 hover:border-emerald-400/60 transition-colors"
-              >
-                + Custom Agent
-              </button>
             </div>
 
-            {/* Model Hot-Swapper + Minimalist Memory Meter */}
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2">
-                <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-xs text-slate-400">Model:</span>
+            {/* Model Switcher + Memory Saved Indicator */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 rounded-full theme-elevated px-3.5 py-1.5">
+                <RefreshCw className="w-3.5 h-3.5 text-emerald-500" />
                 <select
                   aria-label="Switch Agent Model"
                   value={activeAgent.activeModelId}
                   onChange={(e) => handleSwitchAgentModel(activeAgent.id, e.target.value)}
-                  className="bg-[#141D2E] border border-slate-700 rounded-md px-3 py-1.5 text-xs font-mono text-emerald-300 focus:outline-none focus:border-emerald-400 cursor-pointer"
+                  className="bg-transparent text-xs font-semibold focus:outline-none cursor-pointer"
                 >
                   {availableModels.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.label} ({m.provider})
+                    <option key={m.id} value={m.id} className="bg-slate-900 text-white">
+                      {m.label}
                     </option>
                   ))}
                 </select>
               </div>
 
-              <div className="h-4 w-px bg-slate-800 hidden sm:block" />
-
-              <div className="text-xs text-slate-400 font-mono tabular-nums">
-                Active Memory: <strong className="text-white">{tokenStats.activeTokens}t</strong> /{' '}
-                {tokenStats.totalTokens}t ({tokenStats.savedPct}% in graph)
+              <div className="text-xs font-mono theme-text-secondary px-2">
+                <strong>{tokenStats.savedPct}%</strong> memory saved in graph
               </div>
             </div>
           </div>
 
-          {/* VIEW 1: OPEN HOME WORKSPACE */}
+          {/* VIEW 1: OPEN BUBBLY HOME STAGE */}
           {activeView === 'home' && (
             <div className="space-y-6">
-              {/* Interactive Prompt Command Bar */}
+              {/* Bubbly Pill Prompt Bar */}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleRunTask();
                 }}
-                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 border border-slate-800 bg-[#0D121C] p-2.5 rounded-lg"
+                className="rounded-3xl theme-surface p-2.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5"
               >
                 <input
                   type="text"
                   value={taskPrompt}
                   onChange={(e) => setTaskPrompt(e.target.value)}
-                  placeholder={`Give ${activeAgent.name} (${activeAgent.activeModelLabel}) a task on ${state.rootGraphName}...`}
-                  className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none"
+                  placeholder={`Ask ${activeAgent.name} (${activeAgent.activeModelLabel}) to inspect or update the graph...`}
+                  className="flex-1 bg-transparent px-4 py-2 text-xs sm:text-sm focus:outline-none"
                 />
 
                 <div className="flex items-center gap-2 shrink-0">
@@ -1223,13 +1162,13 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                     aria-label="Optional Mid-Task Model Switch"
                     value={midRunSwapModelId}
                     onChange={(e) => setMidRunSwapModelId(e.target.value)}
-                    className="bg-[#131B2A] border border-slate-800 rounded-md px-2.5 py-2 text-xs text-slate-300 font-mono"
+                    className="rounded-full theme-elevated px-3.5 py-2 text-xs font-medium focus:outline-none"
                   >
                     <option value="">Keep {activeAgent.activeModelLabel}</option>
                     {availableModels
                       .filter((m) => m.id !== activeAgent.activeModelId)
                       .map((m) => (
-                        <option key={m.id} value={m.id}>
+                        <option key={m.id} value={m.id} className="bg-slate-900 text-white">
                           Swap mid-run → {m.label}
                         </option>
                       ))}
@@ -1238,7 +1177,7 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                   <button
                     type="submit"
                     disabled={isRunningTask || !taskPrompt.trim()}
-                    className="tactile-emerald inline-flex items-center gap-2 px-5 py-2 rounded-md text-xs font-semibold disabled:opacity-50 whitespace-nowrap"
+                    className="bubble-emerald inline-flex items-center gap-2 px-6 py-2.5 text-xs font-semibold disabled:opacity-50 whitespace-nowrap"
                   >
                     {isRunningTask ? (
                       <>
@@ -1255,31 +1194,31 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                 </div>
               </form>
 
-              {/* Latest Run Compact Summary Banner */}
+              {/* Latest Run Output Bubble */}
               {latestRun && (
-                <div className="border border-emerald-500/30 bg-[#0E1920] p-4 rounded-lg space-y-2">
-                  <div className="flex items-center justify-between text-xs text-emerald-300">
-                    <span className="font-semibold">
-                      Latest Execution ({latestRun.modelsUsed?.join(' → ')}) ·{' '}
-                      {latestRun.steps.length} Graph Steps
+                <div className="rounded-3xl theme-surface p-5 space-y-2 border-emerald-500/40">
+                  <div className="flex items-center justify-between text-xs font-semibold text-emerald-500">
+                    <span>
+                      Completed across {latestRun.modelsUsed?.join(' → ')} ({latestRun.steps.length} steps)
                     </span>
                     <button
                       type="button"
                       onClick={() => setLatestRun(null)}
-                      className="text-slate-400 hover:text-white font-mono"
+                      className="theme-text-muted hover:underline"
                     >
-                      Hide
+                      Close
                     </button>
                   </div>
-                  <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-xs sm:text-sm theme-text-secondary leading-relaxed whitespace-pre-wrap">
                     {latestRun.finalSynthesis}
                   </p>
                 </div>
               )}
 
-              {/* Centerpiece Interactive Graph Stage */}
+              {/* Open Interactive Bubble Graph + Single Selected Bubble Card */}
               <HierarchicalGraphCanvas
                 state={state}
+                theme={theme}
                 selectedAgentId={selectedAgentId}
                 selectedSubtopicId={selectedSubtopicId}
                 selectedNodeId={selectedNodeId}
@@ -1299,247 +1238,241 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                 onReleaseSubtopic={handleReleaseSubtopic}
                 onOpenNewNodeModal={(subId) => setMutateModalSubtopicId(subId)}
               />
+            </div>
+          )}
 
-              {/* Clean Sub-Topic Switchboard Grid */}
-              <div className="space-y-3 pt-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="text-sm font-semibold text-white">
-                    Sub-Topic Context Partitions ({state.subtopics.length})
-                  </h2>
-                  <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={autoEvictOnFinish}
-                      onChange={(e) => setAutoEvictOnFinish(e.target.checked)}
-                      className="accent-emerald-500"
-                    />
-                    Auto-return topics to graph after agent run
-                  </label>
+          {/* VIEW 2: DEDICATED IN-APP README & VISUAL GUIDE */}
+          {activeView === 'readme' && (
+            <div className="space-y-6">
+              {/* Hero Welcome Bubble */}
+              <div className="rounded-3xl theme-surface p-7 space-y-3">
+                <div className="text-xs font-semibold text-emerald-500">
+                  README & Interactive Guide
                 </div>
+                <h1 className="text-2xl sm:text-3xl font-bold">
+                  How EngramGraph Works & How to Use It
+                </h1>
+                <p className="text-sm theme-text-secondary max-w-2xl leading-relaxed">
+                  EngramGraph gives all your AI agents and IDEs (Claude Code, OpenAI Codex, Cursor, ChatGPT, and Gemini) a single shared FalkorDB memory graph—so agents only load the exact sub-topic bubble they need and never lose context when you switch models.
+                </p>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {state.subtopics.map((sub) => {
-                    const isMounted = activeAgent.mountedSubtopicIds.includes(sub.id);
-                    const subNodes = state.nodes.filter((n) => n.subtopicId === sub.id);
+              {/* The 5 Core Rules in Clean Bubbly Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {[
+                  {
+                    step: '01. Main Graph & Sub-Topics',
+                    title: 'Context Split into Bubbles',
+                    body: 'Instead of one giant prompt, your project is split into distinct Sub-Topic bubbles (like Architecture, Security, or SRE).',
+                  },
+                  {
+                    step: '02. Summary-Only Default',
+                    title: '85%+ Token Savings',
+                    body: 'Agents never hold the whole graph at once. By default, every agent holds only a 2-sentence summary of each Sub-Topic.',
+                  },
+                  {
+                    step: '03. Pull, Update & Send Back',
+                    title: 'On-Demand Memory Paging',
+                    body: 'Agents pull a Sub-Topic bubble only when needed, commit new memories + updated summaries, and send it back to the graph when done.',
+                  },
+                ].map((card, idx) => (
+                  <div key={idx} className="rounded-3xl theme-surface p-6 space-y-2">
+                    <div className="text-xs font-semibold text-emerald-500">{card.step}</div>
+                    <h3 className="text-base font-bold">{card.title}</h3>
+                    <p className="text-xs sm:text-sm theme-text-secondary leading-relaxed">
+                      {card.body}
+                    </p>
+                  </div>
+                ))}
+              </div>
 
-                    return (
-                      <div
-                        key={sub.id}
-                        onClick={() => setSelectedSubtopicId(sub.id)}
-                        className={`p-4 rounded-lg border transition-colors cursor-pointer flex flex-col justify-between gap-4 ${
-                          isMounted
-                            ? 'bg-[#101B2B] border-emerald-500/50'
-                            : selectedSubtopicId === sub.id
-                            ? 'bg-[#111724] border-slate-600'
-                            : 'bg-[#0C1018] border-slate-800/80 hover:border-slate-700'
-                        }`}
+              {/* How to Use the App (4 Interactive Action Cards) */}
+              <div className="rounded-3xl theme-surface p-7 space-y-5">
+                <h2 className="text-lg font-bold">Quick Start — 4 Ways to Use EngramGraph</h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="rounded-2xl theme-elevated p-5 flex flex-col justify-between gap-4">
+                    <div className="space-y-1.5">
+                      <h3 className="text-sm font-bold">
+                        1. Pull & Send Back Sub-Topics on the Graph
+                      </h3>
+                      <p className="text-xs theme-text-secondary leading-relaxed">
+                        Click any bubble on the Graph Home canvas, then click <strong>Pull into Agent</strong> to mount its memories, or <strong>Send Back to Graph</strong> to free memory.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveView('home')}
+                      className="bubble-emerald w-fit px-4 py-2 text-xs font-semibold"
+                    >
+                      Open Graph Home
+                    </button>
+                  </div>
+
+                  <div className="rounded-2xl theme-elevated p-5 flex flex-col justify-between gap-4">
+                    <div className="space-y-1.5">
+                      <h3 className="text-sm font-bold">
+                        2. Ingest Your Own Docs or Create a Project
+                      </h3>
+                      <p className="text-xs theme-text-secondary leading-relaxed">
+                        Paste any PRD, architecture doc, or README and let EngramGraph automatically split it into Sub-Topic bubbles and Memory Nodes.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsIngestModalOpen(true)}
+                      className="bubble-btn w-fit px-4 py-2 text-xs font-semibold"
+                    >
+                      Ingest Document Now
+                    </button>
+                  </div>
+
+                  <div className="rounded-2xl theme-elevated p-5 flex flex-col justify-between gap-4">
+                    <div className="space-y-1.5">
+                      <h3 className="text-sm font-bold">
+                        3. Switch Models & Build Multi-Agent Workflows
+                      </h3>
+                      <p className="text-xs theme-text-secondary leading-relaxed">
+                        Hot-swap any agent between Claude, ChatGPT, Gemini, or your own custom vLLM/Ollama models with zero context loss, or chain them in a Workflow.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setActiveView('workflows')}
+                        className="bubble-btn px-4 py-2 text-xs font-semibold"
                       >
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between text-xs text-slate-400">
-                            <span className="font-semibold text-white">{sub.name}</span>
-                            <span className="font-mono text-[11px] tabular-nums">
-                              v{sub.version} · {subNodes.length}n
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                            {sub.summary}
-                          </p>
+                        Open Workflows
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveView('builder')}
+                        className="bubble-btn px-4 py-2 text-xs font-semibold"
+                      >
+                        Models & Agents
+                      </button>
+                    </div>
+                  </div>
 
-                          {isMounted && (
-                            <div className="pt-2 mt-2 border-t border-slate-800/80 space-y-1">
-                              {subNodes.map((n) => (
-                                <div
-                                  key={n.id}
-                                  className="text-[11px] text-emerald-300 truncate font-mono"
-                                >
-                                  • {n.title}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-800/60">
-                          <span className="font-mono text-[11px] tabular-nums text-slate-500">
-                            {isMounted
-                              ? `${sub.fullTokenCount}t loaded`
-                              : `${sub.summaryTokenCount}t summary`}
-                          </span>
-
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMutateModalSubtopicId(sub.id);
-                              }}
-                              className="px-2 py-1 rounded text-[11px] text-slate-400 hover:text-white bg-[#131B2A] border border-slate-800"
-                            >
-                              + Node
-                            </button>
-                            {isMounted ? (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleReleaseSubtopic(activeAgent.id, sub.id);
-                                }}
-                                className="tactile-rose inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium"
-                              >
-                                <ArrowUpRight className="w-3 h-3" />
-                                Send Back
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleCheckoutSubtopic(activeAgent.id, sub.id);
-                                }}
-                                className="tactile-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-[#172133] border border-slate-700 text-emerald-300 hover:text-white"
-                              >
-                                <ArrowDownLeft className="w-3 h-3" />
-                                Pull Topic
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  <div className="rounded-2xl theme-elevated p-5 flex flex-col justify-between gap-4">
+                    <div className="space-y-1.5">
+                      <h3 className="text-sm font-bold">
+                        4. Connect Claude Code, OpenAI Codex & Cursor
+                      </h3>
+                      <p className="text-xs theme-text-secondary leading-relaxed">
+                        Download <code className="font-mono text-emerald-500">engram-mcp-bridge.mjs</code>, <code className="font-mono text-emerald-500">CLAUDE.md</code>, or <code className="font-mono text-emerald-500">AGENTS.md</code> to connect your local IDE directly to this graph.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveView('sdk')}
+                      className="bubble-emerald w-fit px-4 py-2 text-xs font-semibold"
+                    >
+                      Connect IDE / CLI
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* VIEW 2: CUSTOM MULTI-AGENT WORKFLOW BUILDER & RUNNER */}
+          {/* VIEW 3: CUSTOM MULTI-AGENT WORKFLOW BUILDER & RUNNER */}
           {activeView === 'workflows' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Saved Workflows List */}
               <div className="lg:col-span-5 space-y-4">
-                <div>
-                  <h2 className="text-base font-semibold text-white">
-                    Multi-Agent Workflow Pipelines
-                  </h2>
-                  <p className="text-xs text-slate-400">
-                    Chain multiple agents and models over the same shared FalkorDB graph.
-                  </p>
-                </div>
+                <div className="rounded-3xl theme-surface p-6 space-y-4">
+                  <div>
+                    <h2 className="text-base font-bold">Saved Workflow Pipelines</h2>
+                    <p className="text-xs theme-text-secondary">
+                      Chain multiple agents and models over the shared graph.
+                    </p>
+                  </div>
 
-                <div className="space-y-3">
-                  {(state.workflows || []).map((wf) => {
-                    const isRunningThis = runningWorkflowId === wf.id;
-                    return (
-                      <div
-                        key={wf.id}
-                        className="border border-slate-800 bg-[#0D121C] rounded-lg p-4 space-y-3"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <h3 className="text-sm font-semibold text-white">{wf.name}</h3>
-                            <p className="text-xs text-slate-400 mt-0.5">{wf.description}</p>
+                  <div className="space-y-3">
+                    {(state.workflows || []).map((wf) => {
+                      const isRunningThis = runningWorkflowId === wf.id;
+                      return (
+                        <div
+                          key={wf.id}
+                          className="rounded-2xl theme-elevated p-4 space-y-3"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h3 className="text-sm font-bold">{wf.name}</h3>
+                              <p className="text-xs theme-text-secondary mt-0.5">
+                                {wf.description}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteWorkflow(wf.id)}
+                              className="theme-text-muted hover:text-rose-500 p-1"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteWorkflow(wf.id)}
-                            className="text-slate-500 hover:text-rose-400 p-1"
-                            title="Delete Workflow"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
 
-                        <div className="space-y-1.5 border-t border-slate-800/80 pt-2.5">
-                          {wf.stages.map((st, idx) => {
-                            const ag = state.agents.find((a) => a.id === st.agentId);
-                            const mod = availableModels.find((m) => m.id === st.modelOverrideId);
-                            return (
-                              <div
-                                key={st.id}
-                                className="text-xs bg-[#090C10] border border-slate-800/80 rounded p-2.5 space-y-1"
-                              >
-                                <div className="flex items-center justify-between font-mono text-[11px] text-emerald-400">
-                                  <span>
-                                    Stage {idx + 1}: {ag?.name || st.agentId}
-                                  </span>
-                                  <span>{mod?.label || ag?.activeModelLabel}</span>
-                                </div>
-                                <p className="text-slate-300 text-xs">{st.instruction}</p>
-                              </div>
-                            );
-                          })}
+                          <div className="flex items-center justify-between pt-2">
+                            <span className="text-xs font-mono theme-text-muted">
+                              {wf.stages.length} stages
+                            </span>
+                            <button
+                              type="button"
+                              disabled={Boolean(runningWorkflowId)}
+                              onClick={() => handleRunWorkflow(wf.id)}
+                              className="bubble-emerald inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold disabled:opacity-50"
+                            >
+                              {isRunningThis ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  Running…
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-3.5 h-3.5 fill-current" />
+                                  Run Pipeline
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </div>
-
-                        <div className="flex items-center justify-end pt-1">
-                          <button
-                            type="button"
-                            disabled={Boolean(runningWorkflowId)}
-                            onClick={() => handleRunWorkflow(wf.id)}
-                            className="tactile-emerald inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold disabled:opacity-50"
-                          >
-                            {isRunningThis ? (
-                              <>
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                Running Pipeline…
-                              </>
-                            ) : (
-                              <>
-                                <Play className="w-3.5 h-3.5 fill-current" />
-                                Run Workflow
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              {/* Custom Workflow Builder Form */}
-              <div className="lg:col-span-7 border border-slate-800 bg-[#0D121C] rounded-lg p-5 space-y-4 h-fit">
+              <div className="lg:col-span-7 rounded-3xl theme-surface p-6 space-y-4 h-fit">
                 <div>
-                  <h3 className="text-sm font-semibold text-white">
-                    Build New Multi-Stage Agent Workflow
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Define sequential agent stages, assign a specific model to each stage, and set automatic graph eviction rules.
+                  <h3 className="text-base font-bold">Build New Multi-Stage Workflow</h3>
+                  <p className="text-xs theme-text-secondary">
+                    Assign an agent and model to each stage.
                   </p>
                 </div>
 
                 <form onSubmit={handleSaveWorkflow} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Workflow Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={wfName}
-                        onChange={(e) => setWfName(e.target.value)}
-                        placeholder="e.g., Security Audit → PR Synthesis"
-                        className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Description
-                      </label>
-                      <input
-                        type="text"
-                        value={wfDescription}
-                        onChange={(e) => setWfDescription(e.target.value)}
-                        placeholder="e.g., Multi-model handoff over shared graph"
-                        className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={wfName}
+                      onChange={(e) => setWfName(e.target.value)}
+                      placeholder="Workflow Name"
+                      className="rounded-2xl theme-elevated px-4 py-2.5 text-xs focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={wfDescription}
+                      onChange={(e) => setWfDescription(e.target.value)}
+                      placeholder="Short description"
+                      className="rounded-2xl theme-elevated px-4 py-2.5 text-xs focus:outline-none"
+                    />
                   </div>
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-slate-300">
-                        Pipeline Stages ({wfStages.length})
+                      <span className="text-xs font-semibold">
+                        Stages ({wfStages.length})
                       </span>
                       <button
                         type="button"
@@ -1554,7 +1487,7 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                             },
                           ])
                         }
-                        className="text-xs text-emerald-400 hover:underline font-medium"
+                        className="text-xs text-emerald-500 font-semibold hover:underline"
                       >
                         + Add Stage
                       </button>
@@ -1563,10 +1496,10 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                     {wfStages.map((stage, idx) => (
                       <div
                         key={idx}
-                        className="p-3.5 rounded bg-[#090C10] border border-slate-800 space-y-2.5"
+                        className="p-4 rounded-2xl theme-elevated space-y-2.5"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-mono text-xs text-emerald-400">
+                          <span className="font-mono text-xs font-semibold text-emerald-500">
                             Stage {idx + 1}
                           </span>
                           {wfStages.length > 1 && (
@@ -1575,7 +1508,7 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                               onClick={() =>
                                 setWfStages((prev) => prev.filter((_, i) => i !== idx))
                               }
-                              className="text-[11px] text-slate-500 hover:text-rose-400"
+                              className="text-[11px] theme-text-muted hover:text-rose-500"
                             >
                               Remove
                             </button>
@@ -1583,51 +1516,41 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          <div>
-                            <label className="block text-[11px] text-slate-400 mb-1">
-                              Assigned Agent
-                            </label>
-                            <select
-                              value={stage.agentId}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setWfStages((prev) =>
-                                  prev.map((s, i) => (i === idx ? { ...s, agentId: val } : s))
-                                );
-                              }}
-                              className="w-full bg-[#0D121C] border border-slate-800 rounded px-2.5 py-1.5 text-xs text-white"
-                            >
-                              {state.agents.map((a) => (
-                                <option key={a.id} value={a.id}>
-                                  {a.name} ({a.role})
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                          <select
+                            value={stage.agentId}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setWfStages((prev) =>
+                                prev.map((s, i) => (i === idx ? { ...s, agentId: val } : s))
+                              );
+                            }}
+                            className="rounded-xl theme-surface px-3 py-2 text-xs"
+                          >
+                            {state.agents.map((a) => (
+                              <option key={a.id} value={a.id}>
+                                {a.name} ({a.role})
+                              </option>
+                            ))}
+                          </select>
 
-                          <div>
-                            <label className="block text-[11px] text-slate-400 mb-1">
-                              Model for This Stage
-                            </label>
-                            <select
-                              value={stage.modelOverrideId}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setWfStages((prev) =>
-                                  prev.map((s, i) =>
-                                    i === idx ? { ...s, modelOverrideId: val } : s
-                                  )
-                                );
-                              }}
-                              className="w-full bg-[#0D121C] border border-slate-800 rounded px-2.5 py-1.5 text-xs font-mono text-emerald-300"
-                            >
-                              {availableModels.map((m) => (
-                                <option key={m.id} value={m.id}>
-                                  {m.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                          <select
+                            value={stage.modelOverrideId}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setWfStages((prev) =>
+                                prev.map((s, i) =>
+                                  i === idx ? { ...s, modelOverrideId: val } : s
+                                )
+                              );
+                            }}
+                            className="rounded-xl theme-surface px-3 py-2 text-xs font-mono"
+                          >
+                            {availableModels.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.label}
+                              </option>
+                            ))}
+                          </select>
                         </div>
 
                         <input
@@ -1640,19 +1563,19 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                               prev.map((s, i) => (i === idx ? { ...s, instruction: val } : s))
                             );
                           }}
-                          placeholder="Stage instruction (which sub-topics to inspect, update, and verify)..."
-                          className="w-full bg-[#0D121C] border border-slate-800 rounded px-3 py-2 text-xs text-white"
+                          placeholder="What should this stage inspect and commit?"
+                          className="w-full rounded-xl theme-surface px-3.5 py-2 text-xs"
                         />
                       </div>
                     ))}
                   </div>
 
-                  <div className="flex justify-end pt-2">
+                  <div className="flex justify-end">
                     <button
                       type="submit"
-                      className="tactile-emerald px-5 py-2 rounded-md text-xs font-semibold"
+                      className="bubble-emerald px-5 py-2.5 text-xs font-semibold"
                     >
-                      Save Workflow Pipeline
+                      Save Workflow
                     </button>
                   </div>
                 </form>
@@ -1660,264 +1583,188 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
             </div>
           )}
 
-          {/* VIEW 3: BRING YOUR OWN MODELS & CUSTOM CORPORATE AGENTS */}
+          {/* VIEW 4: BRING YOUR OWN MODELS & AGENTS */}
           {activeView === 'builder' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Custom Model Registry */}
-              <div className="border border-slate-800 bg-[#0D121C] rounded-lg p-5 space-y-5">
+              <div className="rounded-3xl theme-surface p-6 space-y-5">
                 <div>
-                  <h2 className="text-base font-semibold text-white">
-                    Custom Model Registry
-                  </h2>
-                  <p className="text-xs text-slate-400">
-                    Register internal vLLM, Ollama, DeepSeek, Claude, or OpenAI models. Because state lives in FalkorDB, any registered model can take over an agent mid-workflow.
+                  <h2 className="text-base font-bold">Custom Model Registry</h2>
+                  <p className="text-xs theme-text-secondary">
+                    Add your own Ollama, vLLM, DeepSeek, Claude, or OpenAI models.
                   </p>
                 </div>
 
-                <form onSubmit={handleRegisterCustomModel} className="space-y-3 border-b border-slate-800 pb-5">
+                <form onSubmit={handleRegisterCustomModel} className="space-y-3 border-b border-slate-500/15 pb-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Model Identifier
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={customModelId}
-                        onChange={(e) => setCustomModelId(e.target.value)}
-                        placeholder="e.g., deepseek-r1-70b"
-                        className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-2 text-xs font-mono text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Display Label
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={customModelLabel}
-                        onChange={(e) => setCustomModelLabel(e.target.value)}
-                        placeholder="e.g., DeepSeek R1 70B (Internal)"
-                        className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-2 text-xs text-white"
-                      />
-                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={customModelId}
+                      onChange={(e) => setCustomModelId(e.target.value)}
+                      placeholder="Model ID (e.g. deepseek-r1)"
+                      className="rounded-2xl theme-elevated px-3.5 py-2 text-xs font-mono"
+                    />
+                    <input
+                      type="text"
+                      required
+                      value={customModelLabel}
+                      onChange={(e) => setCustomModelLabel(e.target.value)}
+                      placeholder="Display Label"
+                      className="rounded-2xl theme-elevated px-3.5 py-2 text-xs"
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Provider Family
-                      </label>
-                      <select
-                        value={customModelProvider}
-                        onChange={(e) =>
-                          setCustomModelProvider(e.target.value as ModelProvider)
-                        }
-                        className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-2 text-xs text-white"
-                      >
-                        <option value="Self-Hosted vLLM / Ollama">Self-Hosted vLLM / Ollama</option>
-                        <option value="DeepSeek / OpenWeights">DeepSeek / OpenWeights</option>
-                        <option value="Anthropic Claude">Anthropic Claude</option>
-                        <option value="OpenAI ChatGPT">OpenAI ChatGPT</option>
-                        <option value="Google Gemini">Google Gemini</option>
-                        <option value="Meta Llama">Meta Llama</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Active Paging Token Budget
-                      </label>
-                      <input
-                        type="number"
-                        value={customModelBudget}
-                        onChange={(e) => setCustomModelBudget(Number(e.target.value))}
-                        className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-2 text-xs font-mono text-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1">
-                      Gateway / Proxy Route URI
-                    </label>
+                    <select
+                      value={customModelProvider}
+                      onChange={(e) =>
+                        setCustomModelProvider(e.target.value as ModelProvider)
+                      }
+                      className="rounded-2xl theme-elevated px-3.5 py-2 text-xs"
+                    >
+                      <option value="Self-Hosted vLLM / Ollama">Self-Hosted vLLM / Ollama</option>
+                      <option value="DeepSeek / OpenWeights">DeepSeek / OpenWeights</option>
+                      <option value="Anthropic Claude">Anthropic Claude</option>
+                      <option value="OpenAI ChatGPT">OpenAI ChatGPT</option>
+                      <option value="Google Gemini">Google Gemini</option>
+                    </select>
                     <input
                       type="text"
                       value={customModelRoute}
                       onChange={(e) => setCustomModelRoute(e.target.value)}
-                      placeholder="http://localhost:11434/v1 or proxy://litellm-router"
-                      className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-2 text-xs font-mono text-slate-300"
+                      placeholder="Endpoint route"
+                      className="rounded-2xl theme-elevated px-3.5 py-2 text-xs font-mono"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="tactile-emerald px-4 py-2 rounded-md text-xs font-semibold"
+                    className="bubble-emerald px-5 py-2 text-xs font-semibold"
                   >
-                    + Register Model in Workspace
+                    + Register Model
                   </button>
                 </form>
 
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold text-slate-300">
-                    Registered Models ({availableModels.length})
-                  </div>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {availableModels.map((m) => (
-                      <div
-                        key={m.id}
-                        className="flex items-center justify-between p-2.5 rounded bg-[#090C10] border border-slate-800/80 text-xs"
-                      >
-                        <div>
-                          <div className="font-semibold text-white">{m.label}</div>
-                          <div className="font-mono text-[11px] text-slate-500">
-                            {m.id} · {m.provider}
-                          </div>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {availableModels.map((m) => (
+                    <div
+                      key={m.id}
+                      className="flex items-center justify-between p-3 rounded-2xl theme-elevated text-xs"
+                    >
+                      <div>
+                        <div className="font-bold">{m.label}</div>
+                        <div className="font-mono text-[11px] theme-text-muted">
+                          {m.id} · {m.provider}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleSwitchAgentModel(activeAgent.id, m.id)}
-                          className="tactile-btn px-2.5 py-1 rounded bg-[#141D2E] border border-slate-700 text-[11px] text-emerald-300 hover:text-white"
-                        >
-                          Use on {activeAgent.name}
-                        </button>
                       </div>
-                    ))}
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() => handleSwitchAgentModel(activeAgent.id, m.id)}
+                        className="bubble-btn px-3 py-1.5 text-[11px] font-semibold"
+                      >
+                        Use on {activeAgent.name}
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Custom Corporate Agent Builder */}
-              <div className="border border-slate-800 bg-[#0D121C] rounded-lg p-5 space-y-5">
+              <div className="rounded-3xl theme-surface p-6 space-y-5">
                 <div>
-                  <h2 className="text-base font-semibold text-white">
-                    Corporate Agent Roster & Builder
-                  </h2>
-                  <p className="text-xs text-slate-400">
-                    Create specialized agents for your team. Every agent holds only the Sub-Topic Summary Index until it pulls a sub-topic.
+                  <h2 className="text-base font-bold">Create Custom Agent</h2>
+                  <p className="text-xs theme-text-secondary">
+                    Add specialized agents that share this workspace graph.
                   </p>
                 </div>
 
-                <form onSubmit={handleCreateCustomAgent} className="space-y-3 border-b border-slate-800 pb-5">
+                <form onSubmit={handleCreateCustomAgent} className="space-y-3 border-b border-slate-500/15 pb-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Agent Name
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={newAgentName}
-                        onChange={(e) => setNewAgentName(e.target.value)}
-                        placeholder="e.g., Sentinel"
-                        className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-2 text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1">
-                        Corporate Role
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={newAgentRole}
-                        onChange={(e) => setNewAgentRole(e.target.value)}
-                        placeholder="e.g., FinOps & PCI Auditor"
-                        className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-2 text-xs text-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1">
-                      Assigned Default Model
-                    </label>
-                    <select
-                      value={newAgentModelId}
-                      onChange={(e) => setNewAgentModelId(e.target.value)}
-                      className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-2 text-xs font-mono text-emerald-300"
-                    >
-                      {availableModels.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.label} ({m.provider})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1">
-                      Domain Specialty
-                    </label>
                     <input
                       type="text"
-                      value={newAgentSpecialty}
-                      onChange={(e) => setNewAgentSpecialty(e.target.value)}
-                      placeholder="e.g., Audits payment settlement sub-topics and enforces compliance rules"
-                      className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-2 text-xs text-white"
+                      required
+                      value={newAgentName}
+                      onChange={(e) => setNewAgentName(e.target.value)}
+                      placeholder="Agent Name (e.g. Sentinel)"
+                      className="rounded-2xl theme-elevated px-3.5 py-2 text-xs"
+                    />
+                    <input
+                      type="text"
+                      required
+                      value={newAgentRole}
+                      onChange={(e) => setNewAgentRole(e.target.value)}
+                      placeholder="Role (e.g. FinOps Auditor)"
+                      className="rounded-2xl theme-elevated px-3.5 py-2 text-xs"
                     />
                   </div>
 
+                  <select
+                    value={newAgentModelId}
+                    onChange={(e) => setNewAgentModelId(e.target.value)}
+                    className="w-full rounded-2xl theme-elevated px-3.5 py-2 text-xs font-mono"
+                  >
+                    {availableModels.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.label} ({m.provider})
+                      </option>
+                    ))}
+                  </select>
+
+                  <input
+                    type="text"
+                    value={newAgentSpecialty}
+                    onChange={(e) => setNewAgentSpecialty(e.target.value)}
+                    placeholder="Specialty description"
+                    className="w-full rounded-2xl theme-elevated px-3.5 py-2 text-xs"
+                  />
+
                   <button
                     type="submit"
-                    className="tactile-emerald px-4 py-2 rounded-md text-xs font-semibold"
+                    className="bubble-emerald px-5 py-2 text-xs font-semibold"
                   >
-                    + Create Corporate Agent
+                    + Create Agent
                   </button>
                 </form>
 
                 <div className="space-y-2">
-                  <div className="text-xs font-semibold text-slate-300">
-                    Active Workspace Agents ({state.agents.length})
-                  </div>
-                  <div className="space-y-2">
-                    {state.agents.map((ag) => (
-                      <div
-                        key={ag.id}
-                        className="flex items-center justify-between p-3 rounded bg-[#090C10] border border-slate-800/80 text-xs"
-                      >
-                        <div className="space-y-0.5">
-                          <div className="font-semibold text-white">
-                            {ag.name} · <span className="text-slate-400 font-normal">{ag.role}</span>
-                          </div>
-                          <div className="font-mono text-[11px] text-emerald-400">
-                            Model: {ag.activeModelLabel} · {ag.mountedSubtopicIds.length} topics loaded
-                          </div>
+                  {state.agents.map((ag) => (
+                    <div
+                      key={ag.id}
+                      className="flex items-center justify-between p-3 rounded-2xl theme-elevated text-xs"
+                    >
+                      <div>
+                        <div className="font-bold">
+                          {ag.name} · <span className="font-normal theme-text-secondary">{ag.role}</span>
                         </div>
-                        {state.agents.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteAgent(ag.id)}
-                            className="text-slate-500 hover:text-rose-400 p-1"
-                            title="Delete Agent"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                        <div className="font-mono text-[11px] text-emerald-500">
+                          {ag.activeModelLabel}
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                      {state.agents.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAgent(ag.id)}
+                          className="theme-text-muted hover:text-rose-500 p-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           )}
 
-          {/* VIEW 4: CLAUDE CODE, OPENAI CODEX, CURSOR & VS CODE MCP HUB */}
+          {/* VIEW 5: CLAUDE CODE, OPENAI CODEX, CURSOR & VS CODE MCP HUB */}
           {activeView === 'sdk' && (
             <div className="space-y-6">
-              {/* Top Banner & One-Click Bridge Downloads */}
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border border-slate-800 bg-[#0D121C] p-5 rounded-lg">
+              <div className="rounded-3xl theme-surface p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="space-y-1 max-w-2xl">
-                  <h2 className="text-base font-semibold text-white">
-                    Connect Claude Code, OpenAI Codex CLI & Any IDE Workspace
+                  <h2 className="text-base font-bold">
+                    Connect Claude Code, OpenAI Codex CLI & Cursor
                   </h2>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Attach local coding agents in <strong className="text-slate-200">Claude Code</strong>,{' '}
-                    <strong className="text-slate-200">OpenAI Codex CLI</strong>,{' '}
-                    <strong className="text-slate-200">Cursor</strong>,{' '}
-                    <strong className="text-slate-200">VS Code</strong>, or{' '}
-                    <strong className="text-slate-200">Windsurf</strong> to workspace{' '}
-                    <code className="font-mono text-emerald-300">{state.rootGraphId}</code> via the live Model Context Protocol (MCP) endpoint.
+                  <p className="text-xs theme-text-secondary leading-relaxed">
+                    Download the zero-dependency MCP bridge and instruction files to connect any local IDE or CLI agent directly to project <code className="font-mono text-emerald-500">{state.rootGraphId}</code>.
                   </p>
                 </div>
 
@@ -1925,7 +1772,7 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                   <a
                     href={`/api/ide/engram-mcp-bridge.mjs?origin=${encodeURIComponent(originUrl)}&agentId=${activeAgent.id}`}
                     download="engram-mcp-bridge.mjs"
-                    className="tactile-emerald inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-semibold"
+                    className="bubble-emerald inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
                   >
                     <Download className="w-3.5 h-3.5" />
                     engram-mcp-bridge.mjs
@@ -1933,43 +1780,42 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                   <button
                     type="button"
                     onClick={() => handleDownloadTextFile('CLAUDE.md', claudeMdContent)}
-                    className="tactile-btn inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium bg-[#141D2E] border border-slate-700 text-slate-200 hover:text-white"
+                    className="bubble-btn inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
                   >
-                    <Download className="w-3.5 h-3.5 text-emerald-400" />
+                    <Download className="w-3.5 h-3.5 text-emerald-500" />
                     CLAUDE.md
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDownloadTextFile('AGENTS.md', codexAgentsMdContent)}
-                    className="tactile-btn inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium bg-[#141D2E] border border-slate-700 text-slate-200 hover:text-white"
+                    className="bubble-btn inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold"
                   >
-                    <Download className="w-3.5 h-3.5 text-emerald-400" />
+                    <Download className="w-3.5 h-3.5 text-emerald-500" />
                     AGENTS.md (Codex)
                   </button>
                 </div>
               </div>
 
-              {/* Setup Snippets by IDE / CLI */}
-              <div className="border border-slate-800 bg-[#0D121C] rounded-lg overflow-hidden">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-4 py-2.5 bg-[#090C10]">
+              <div className="rounded-3xl theme-surface overflow-hidden">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-500/15 px-5 py-3">
                   <div className="flex flex-wrap items-center gap-1.5">
                     {(
                       [
                         { id: 'claude_code', label: 'Claude Code CLI' },
                         { id: 'openai_codex', label: 'OpenAI Codex CLI' },
-                        { id: 'cursor_vscode', label: 'Cursor / VS Code / Windsurf' },
-                        { id: 'typescript', label: 'TypeScript SDK' },
-                        { id: 'python', label: 'Python SDK' },
+                        { id: 'cursor_vscode', label: 'Cursor / VS Code' },
+                        { id: 'typescript', label: 'TypeScript' },
+                        { id: 'python', label: 'Python' },
                       ] as const
                     ).map((tab) => (
                       <button
                         key={tab.id}
                         type="button"
                         onClick={() => setSdkTab(tab.id)}
-                        className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                           sdkTab === tab.id
-                            ? 'bg-[#162235] text-emerald-300 border border-slate-700'
-                            : 'text-slate-400 hover:text-white'
+                            ? 'bg-emerald-500 text-slate-950'
+                            : 'theme-text-secondary hover:opacity-80'
                         }`}
                       >
                         {tab.label}
@@ -1984,85 +1830,64 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                       setCopiedSdk(true);
                       setTimeout(() => setCopiedSdk(false), 2000);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-slate-800 text-xs text-slate-200 hover:bg-slate-700"
+                    className="bubble-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold"
                   >
                     {copiedSdk ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
                     ) : (
                       <Copy className="w-3.5 h-3.5" />
                     )}
-                    {copiedSdk ? 'Copied' : 'Copy Setup'}
+                    {copiedSdk ? 'Copied' : 'Copy'}
                   </button>
                 </div>
 
-                <pre className="p-5 font-mono text-xs text-emerald-300 overflow-x-auto leading-relaxed">
+                <pre className="p-5 font-mono text-xs overflow-x-auto leading-relaxed">
                   {sdkSnippets[sdkTab]}
                 </pre>
               </div>
 
-              {/* Interactive Live MCP JSON-RPC Terminal & IDE Simulator */}
+              {/* Live MCP Tool Simulator */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-6 border border-slate-800 bg-[#0D121C] rounded-lg p-5 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-semibold text-white">
-                        Live MCP Tool Call Simulator
-                      </h3>
-                      <p className="text-xs text-slate-400">
-                        Fire real JSON-RPC 2.0 MCP calls against <code className="font-mono text-emerald-300">POST /api/mcp</code> as any IDE client.
-                      </p>
-                    </div>
-                  </div>
+                <div className="lg:col-span-6 rounded-3xl theme-surface p-6 space-y-4">
+                  <h3 className="text-sm font-bold">Test Live IDE MCP Calls</h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">
-                        Simulating IDE / CLI Client
-                      </label>
-                      <select
-                        value={simIdeClient}
-                        onChange={(e) => setSimIdeClient(e.target.value as IdeClientType)}
-                        className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-2 text-xs text-white"
-                      >
-                        <option value="Claude Code CLI">Claude Code CLI</option>
-                        <option value="OpenAI Codex CLI">OpenAI Codex CLI</option>
-                        <option value="Cursor IDE">Cursor IDE</option>
-                        <option value="VS Code Copilot">VS Code Copilot</option>
-                        <option value="Windsurf IDE">Windsurf IDE</option>
-                      </select>
-                    </div>
+                    <select
+                      value={simIdeClient}
+                      onChange={(e) => setSimIdeClient(e.target.value as IdeClientType)}
+                      className="rounded-2xl theme-elevated px-3.5 py-2 text-xs font-semibold"
+                    >
+                      <option value="Claude Code CLI">Claude Code CLI</option>
+                      <option value="OpenAI Codex CLI">OpenAI Codex CLI</option>
+                      <option value="Cursor IDE">Cursor IDE</option>
+                      <option value="VS Code Copilot">VS Code Copilot</option>
+                    </select>
 
-                    <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">
-                        Target Sub-Topic for IDE Checkout
-                      </label>
-                      <select
-                        value={sampleSubId}
-                        onChange={(e) => setSelectedSubtopicId(e.target.value)}
-                        className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-2 text-xs text-emerald-300 font-mono"
-                      >
-                        {state.subtopics.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name} ({s.id})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <select
+                      value={sampleSubId}
+                      onChange={(e) => setSelectedSubtopicId(e.target.value)}
+                      className="rounded-2xl theme-elevated px-3.5 py-2 text-xs font-mono"
+                    >
+                      {state.subtopics.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  {/* 4 Core MCP Tool Action Buttons */}
                   <div className="grid grid-cols-2 gap-2.5">
                     <button
                       type="button"
                       disabled={isCallingMcp}
                       onClick={() => handleExecuteMcpTool('tools/call', 'engram_get_index')}
-                      className="tactile-btn p-2.5 rounded bg-[#131B2A] border border-slate-700 text-left hover:border-emerald-400/60"
+                      className="bubble-btn p-3 text-left"
                     >
-                      <div className="font-mono text-xs font-semibold text-emerald-300">
-                        1. engram_get_index
+                      <div className="font-mono text-xs font-bold text-emerald-500">
+                        1. Get Summary Index
                       </div>
-                      <div className="text-[11px] text-slate-400">
-                        Read summary directory & paths
+                      <div className="text-[11px] theme-text-secondary">
+                        engram_get_index
                       </div>
                     </button>
 
@@ -2072,16 +1897,15 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                       onClick={() =>
                         handleExecuteMcpTool('tools/call', 'engram_checkout_subtopic', {
                           subtopicId: sampleSubId,
-                          reason: `${simIdeClient} checked out ${sampleSubId} while editing repo`,
                         })
                       }
-                      className="tactile-btn p-2.5 rounded bg-[#131B2A] border border-slate-700 text-left hover:border-emerald-400/60"
+                      className="bubble-btn p-3 text-left"
                     >
-                      <div className="font-mono text-xs font-semibold text-emerald-300">
-                        2. engram_checkout_subtopic
+                      <div className="font-mono text-xs font-bold text-emerald-500">
+                        2. Pull Sub-Topic
                       </div>
-                      <div className="text-[11px] text-slate-400">
-                        Page in [{sampleSubId}] nodes
+                      <div className="text-[11px] theme-text-secondary">
+                        engram_checkout_subtopic
                       </div>
                     </button>
 
@@ -2096,13 +1920,13 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                           kind: 'Decision',
                         })
                       }
-                      className="tactile-btn p-2.5 rounded bg-[#131B2A] border border-slate-700 text-left hover:border-emerald-400/60"
+                      className="bubble-btn p-3 text-left"
                     >
-                      <div className="font-mono text-xs font-semibold text-emerald-300">
-                        3. engram_commit_memory
+                      <div className="font-mono text-xs font-bold text-emerald-500">
+                        3. Commit Memory
                       </div>
-                      <div className="text-[11px] text-slate-400">
-                        Commit IDE decision to graph
+                      <div className="text-[11px] theme-text-secondary">
+                        engram_commit_memory
                       </div>
                     </button>
 
@@ -2112,118 +1936,92 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={
                       onClick={() =>
                         handleExecuteMcpTool('tools/call', 'engram_release_subtopic', {
                           subtopicId: sampleSubId,
-                          reason: `${simIdeClient} finished coding task; returning context to FalkorDB`,
                         })
                       }
-                      className="tactile-rose p-2.5 rounded text-left"
+                      className="bubble-rose p-3 text-left"
                     >
-                      <div className="font-mono text-xs font-semibold text-rose-200">
-                        4. engram_release_subtopic
+                      <div className="font-mono text-xs font-bold">
+                        4. Send Back
                       </div>
-                      <div className="text-[11px] text-rose-300/80">
-                        Send [{sampleSubId}] back to graph
+                      <div className="text-[11px] opacity-80">
+                        engram_release_subtopic
                       </div>
                     </button>
-                  </div>
-
-                  {/* Quick Custom Commit Payload from IDE */}
-                  <div className="space-y-2 pt-2 border-t border-slate-800">
-                    <div className="text-[11px] text-slate-400">
-                      IDE Memory Node Payload (Used by <code className="font-mono text-emerald-300">engram_commit_memory</code>):
-                    </div>
-                    <input
-                      type="text"
-                      value={mcpCommitTitle}
-                      onChange={(e) => setMcpCommitTitle(e.target.value)}
-                      placeholder="Memory title committed from IDE..."
-                      className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-1.5 text-xs text-white"
-                    />
-                    <input
-                      type="text"
-                      value={mcpCommitContent}
-                      onChange={(e) => setMcpCommitContent(e.target.value)}
-                      placeholder="Detailed architectural note or code change summary..."
-                      className="w-full bg-[#090C10] border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-300"
-                    />
                   </div>
                 </div>
 
-                {/* Live JSON-RPC 2.0 Response Inspector */}
-                <div className="lg:col-span-6 border border-slate-800 bg-[#0D121C] rounded-lg p-5 flex flex-col justify-between space-y-3">
+                <div className="lg:col-span-6 rounded-3xl theme-surface p-6 flex flex-col justify-between space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono text-emerald-400">
-                      MCP JSON-RPC 2.0 Response ({simIdeClient} → /api/mcp)
+                    <span className="text-xs font-mono text-emerald-500 font-semibold">
+                      Live MCP Response ({simIdeClient})
                     </span>
                     <button
                       type="button"
-                      onClick={() => handleExecuteMcpTool('tools/list')}
-                      className="text-xs font-mono text-slate-400 hover:text-white underline"
+                      onClick={handleExportWorkspaceJson}
+                      className="text-xs font-semibold theme-text-secondary hover:underline"
                     >
-                      Inspect tools/list
+                      Export Workspace JSON
                     </button>
                   </div>
-
-                  <pre className="flex-1 bg-[#090C10] border border-slate-800 p-3.5 rounded font-mono text-[11px] text-emerald-300 max-h-80 overflow-y-auto leading-relaxed">
+                  <pre className="flex-1 rounded-2xl theme-elevated p-4 font-mono text-[11px] max-h-60 overflow-y-auto leading-relaxed">
                     {liveApiResponse ||
-                      `// Click any of the 4 MCP tools on the left to execute a real JSON-RPC 2.0 call as ${simIdeClient}.\n// The graph state, active token meter, and Cypher log will update immediately.`}
+                      `// Click any of the 4 buttons on the left to test a live MCP call from ${simIdeClient}.`}
                   </pre>
                 </div>
               </div>
             </div>
           )}
 
-          {/* VIEW 5: CLEAN ACTIVITY & CYPHER LOG */}
+          {/* VIEW 6: CLEAN ACTIVITY & CYPHER LOG */}
           {activeView === 'activity' && (
-            <div className="space-y-4">
+            <div className="rounded-3xl theme-surface p-6 space-y-4">
               <div>
-                <h2 className="text-base font-semibold text-white">
-                  Context Paging, Model Switches & Cypher Log
-                </h2>
-                <p className="text-xs text-slate-400">
-                  Click any event to inspect the exact FalkorDB Cypher query executed.
+                <h2 className="text-base font-bold">Cypher & Model Switch Log</h2>
+                <p className="text-xs theme-text-secondary">
+                  Click any row to view the exact FalkorDB Cypher query executed.
                 </p>
               </div>
 
-              <div className="divide-y divide-slate-800 border border-slate-800 bg-[#0D121C] rounded-lg">
+              <div className="space-y-2.5">
                 {[...state.traceHistory].reverse().map((step) => {
                   const isExpanded = expandedStepId === step.id;
                   return (
-                    <div key={step.id} className="p-4">
+                    <div key={step.id} className="rounded-2xl theme-elevated p-4">
                       <div
                         onClick={() => setExpandedStepId(isExpanded ? null : step.id)}
                         className="flex items-center justify-between gap-4 cursor-pointer"
                       >
                         <div className="space-y-1">
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                            <span className="font-semibold text-white">{step.agentName}</span>
+                          <div className="flex flex-wrap items-center gap-2 text-xs theme-text-secondary">
+                            <span className="font-bold">{step.agentName}</span>
                             <span aria-hidden="true">·</span>
-                            <span className="font-mono text-emerald-400">{step.activeModel}</span>
+                            <span className="font-mono text-emerald-500">{step.activeModel}</span>
                             <span aria-hidden="true">·</span>
                             <span className="font-mono text-[11px]">{step.phase}</span>
                           </div>
-                          <p className="text-xs text-slate-200">{step.summary}</p>
+                          <p className="text-xs sm:text-sm">{step.summary}</p>
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-mono text-xs tabular-nums text-slate-400">
+                          <span className="font-mono text-xs tabular-nums theme-text-muted">
                             {step.activeTokensBefore}t → {step.activeTokensAfter}t
                           </span>
                           {isExpanded ? (
-                            <ChevronDown className="w-4 h-4 text-slate-400" />
+                            <ChevronDown className="w-4 h-4 theme-text-muted" />
                           ) : (
-                            <ChevronRight className="w-4 h-4 text-slate-400" />
+                            <ChevronRight className="w-4 h-4 theme-text-muted" />
                           )}
                         </div>
                       </div>
 
                       {isExpanded && (
-                        <div className="mt-3 pt-3 border-t border-slate-800 space-y-2">
-                          <p className="text-xs text-slate-400">{step.detail}</p>
-                          <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400">
+                        <div className="mt-3 pt-3 border-t border-slate-500/15 space-y-2">
+                          <p className="text-xs theme-text-secondary">{step.detail}</p>
+                          <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-500">
                             <Terminal className="w-3 h-3" />
                             <span>FalkorDB Cypher Query</span>
                           </div>
-                          <pre className="bg-[#090C10] border border-slate-800 p-3 rounded font-mono text-[11px] text-emerald-300 overflow-x-auto">
+                          <pre className="rounded-2xl theme-surface p-3.5 font-mono text-[11px] overflow-x-auto">
                             {step.cypherQuery}
                           </pre>
                         </div>

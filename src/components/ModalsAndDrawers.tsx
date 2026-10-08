@@ -62,25 +62,23 @@ export const NewSubtopicModal: React.FC<NewSubtopicModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-      <div className="w-full max-w-lg border border-slate-700 bg-[#0F1522] text-slate-100">
-        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
-          <h3 className="text-sm font-semibold text-white">
-            Create New Sub-Topic Partition in Main Graph
-          </h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-xs p-4">
+      <div className="w-full max-w-lg rounded-3xl theme-surface overflow-hidden">
+        <div className="flex items-center justify-between border-b border-slate-500/15 px-6 py-4">
+          <h3 className="text-sm font-bold">New Sub-Topic Bubble</h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-full theme-text-secondary hover:opacity-75"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-medium theme-text-secondary mb-1">
                 Sub-Topic Name
               </label>
               <input
@@ -88,12 +86,12 @@ export const NewSubtopicModal: React.FC<NewSubtopicModalProps> = ({
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Model Evaluation & Guardrails"
-                className="w-full bg-[#0B0F17] border border-slate-800 px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                placeholder="e.g., Model Evaluation"
+                className="w-full rounded-2xl theme-elevated px-3.5 py-2 text-xs focus:outline-none focus:border-emerald-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-medium theme-text-secondary mb-1">
                 Domain Area
               </label>
               <input
@@ -101,59 +99,42 @@ export const NewSubtopicModal: React.FC<NewSubtopicModalProps> = ({
                 required
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
-                placeholder="e.g., AI Quality & Telemetry"
-                className="w-full bg-[#0B0F17] border border-slate-800 px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                placeholder="e.g., AI Quality"
+                className="w-full rounded-2xl theme-elevated px-3.5 py-2 text-xs focus:outline-none focus:border-emerald-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Sub-Topic Executive Summary (Always visible in Agent Index)
+            <label className="block text-xs font-medium theme-text-secondary mb-1">
+              2-Sentence Summary (Always in Agent Index)
             </label>
             <textarea
               rows={3}
               required
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              placeholder="Write a concise 2-sentence summary so agents know when to page in this sub-topic..."
-              className="w-full bg-[#0B0F17] border border-slate-800 p-3 text-xs text-white focus:outline-none focus:border-emerald-500"
+              placeholder="Write a short summary so agents know when to pull this sub-topic..."
+              className="w-full rounded-2xl theme-elevated p-3.5 text-xs focus:outline-none focus:border-emerald-500"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Authoring Agent
-            </label>
-            <select
-              value={createdByAgentId}
-              onChange={(e) => setCreatedByAgentId(e.target.value)}
-              className="w-full bg-[#0B0F17] border border-slate-800 px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
-            >
-              {agents.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name} — {a.role}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="border-t border-slate-800 pt-3 space-y-3">
-            <div className="text-xs font-medium text-slate-300">
-              Initial Memory Node Inside Sub-Topic (Optional)
+          <div className="border-t border-slate-500/15 pt-3 space-y-3">
+            <div className="text-xs font-medium theme-text-secondary">
+              Initial Memory Node (Optional)
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <input
                 type="text"
                 value={nodeTitle}
                 onChange={(e) => setNodeTitle(e.target.value)}
-                placeholder="Memory Node Title"
-                className="sm:col-span-2 bg-[#0B0F17] border border-slate-800 px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                placeholder="Memory Title"
+                className="sm:col-span-2 rounded-2xl theme-elevated px-3.5 py-2 text-xs focus:outline-none"
               />
               <select
                 value={nodeKind}
                 onChange={(e) => setNodeKind(e.target.value as MemoryNodeKind)}
-                className="bg-[#0B0F17] border border-slate-800 px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="rounded-2xl theme-elevated px-3 py-2 text-xs focus:outline-none"
               >
                 {Object.values(MemoryNodeKind).map((k) => (
                   <option key={k} value={k}>
@@ -166,8 +147,8 @@ export const NewSubtopicModal: React.FC<NewSubtopicModalProps> = ({
               rows={2}
               value={nodeContent}
               onChange={(e) => setNodeContent(e.target.value)}
-              placeholder="Detailed fact, decision, or procedure stored inside this sub-topic..."
-              className="w-full bg-[#0B0F17] border border-slate-800 p-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+              placeholder="Detailed fact, decision, or procedure..."
+              className="w-full rounded-2xl theme-elevated p-3 text-xs focus:outline-none"
             />
           </div>
 
@@ -175,16 +156,16 @@ export const NewSubtopicModal: React.FC<NewSubtopicModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-300 hover:text-white"
+              className="bubble-btn px-4 py-2 text-xs font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 text-xs font-semibold bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+              className="bubble-emerald px-5 py-2 text-xs font-semibold disabled:opacity-50"
             >
-              {submitting ? 'Creating Partition…' : 'Create Sub-Topic'}
+              {submitting ? 'Creating…' : 'Create Sub-Topic'}
             </button>
           </div>
         </form>
@@ -229,10 +210,10 @@ export const MutateSubtopicModal: React.FC<MutateSubtopicModalProps> = ({
   const [content, setContent] = useState('');
   const [kind, setKind] = useState<MemoryNodeKind>(MemoryNodeKind.DECISION);
   const [connectToNodeId, setConnectToNodeId] = useState<string>('');
-  const [relationType, setRelationType] = useState<EdgeRelationType>(EdgeRelationType.DEPENDS_ON);
-  const [edgeRationale, setEdgeRationale] = useState('');
+  const [relationType, setRelationType] = useState<EdgeRelationType>(
+    EdgeRelationType.DEPENDS_ON
+  );
   const [updatedSummary, setUpdatedSummary] = useState(subtopic?.summary || '');
-  const [commitMessage, setCommitMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -258,17 +239,15 @@ export const MutateSubtopicModal: React.FC<MutateSubtopicModalProps> = ({
             content: content.trim(),
             kind,
             connectToNodeId: connectToNodeId || undefined,
-            relationType,
-            edgeRationale: edgeRationale.trim() || undefined,
+            relationType: connectToNodeId ? relationType : undefined,
           },
         ],
         updatedSummary: updatedSummary.trim(),
-        commitMessage: commitMessage.trim() || `Added ${kind}: ${title.trim()}`,
+        commitMessage: `Added ${kind} node "${title.trim()}"`,
       });
       setTitle('');
       setContent('');
-      setEdgeRationale('');
-      setCommitMessage('');
+      setConnectToNodeId('');
       onClose();
     } finally {
       setSubmitting(false);
@@ -276,138 +255,98 @@ export const MutateSubtopicModal: React.FC<MutateSubtopicModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-      <div className="w-full max-w-xl border border-slate-700 bg-[#0F1522] text-slate-100">
-        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
-          <div>
-            <h3 className="text-sm font-semibold text-white">
-              Commit Graph Memory & Refresh Summary: {subtopic.name}
-            </h3>
-            <p className="text-xs text-slate-400">
-              Sub-Topic ID: <span className="font-mono text-emerald-400">{subtopic.id}</span> · Current Revision: v{subtopic.version}
-            </p>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-xs p-4">
+      <div className="w-full max-w-lg rounded-3xl theme-surface overflow-hidden">
+        <div className="flex items-center justify-between border-b border-slate-500/15 px-6 py-4">
+          <h3 className="text-sm font-bold">Add Memory to {subtopic.name}</h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-full theme-text-secondary hover:opacity-75"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[82vh] overflow-y-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                Committing Agent
-              </label>
-              <select
-                value={agentId}
-                onChange={(e) => setAgentId(e.target.value)}
-                className="w-full bg-[#0B0F17] border border-slate-800 px-3 py-2 text-xs text-white"
-              >
-                {state.agents.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} ({a.role})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                Memory Node Classification
-              </label>
-              <select
-                value={kind}
-                onChange={(e) => setKind(e.target.value as MemoryNodeKind)}
-                className="w-full bg-[#0B0F17] border border-slate-800 px-3 py-2 text-xs text-white"
-              >
-                {Object.values(MemoryNodeKind).map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              New Memory Node Title
-            </label>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <input
               type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Enforce Circuit Breaker on Cross-Subtopic Traversals"
-              className="w-full bg-[#0B0F17] border border-slate-800 px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+              placeholder="Memory Title"
+              className="sm:col-span-2 rounded-2xl theme-elevated px-3.5 py-2 text-xs focus:outline-none"
             />
+            <select
+              value={kind}
+              onChange={(e) => setKind(e.target.value as MemoryNodeKind)}
+              className="rounded-2xl theme-elevated px-3 py-2 text-xs focus:outline-none"
+            >
+              {Object.values(MemoryNodeKind).map((k) => (
+                <option key={k} value={k}>
+                  {k}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Detailed Node Content (Stored inside Sub-Topic)
-            </label>
-            <textarea
-              rows={3}
-              required
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Specify the technical fact, architectural decision, incident episode, or constraint..."
-              className="w-full bg-[#0B0F17] border border-slate-800 p-3 text-xs text-white focus:outline-none focus:border-emerald-500"
-            />
-          </div>
+          <textarea
+            rows={3}
+            required
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Detailed finding, rule, or decision to store inside this sub-topic..."
+            className="w-full rounded-2xl theme-elevated p-3.5 text-xs focus:outline-none"
+          />
 
-          {/* Semantic Edge Linker (Intra- or Cross-SubTopic) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-800 pt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                Link to Existing Memory Node (Optional)
+              <label className="block text-xs font-medium theme-text-secondary mb-1">
+                Link to Existing Node (Optional)
               </label>
               <select
                 value={connectToNodeId}
                 onChange={(e) => setConnectToNodeId(e.target.value)}
-                className="w-full bg-[#0B0F17] border border-slate-800 px-3 py-2 text-xs text-white"
+                className="w-full rounded-2xl theme-elevated px-3 py-2 text-xs focus:outline-none"
               >
-                <option value="">— No edge link —</option>
+                <option value="">— No link —</option>
                 {state.nodes.map((n) => (
                   <option key={n.id} value={n.id}>
-                    [{n.subtopicId}] {n.title}
+                    {n.title}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                Edge Relationship Type
+              <label className="block text-xs font-medium theme-text-secondary mb-1">
+                Relationship Type
               </label>
               <select
                 value={relationType}
                 onChange={(e) => setRelationType(e.target.value as EdgeRelationType)}
                 disabled={!connectToNodeId}
-                className="w-full bg-[#0B0F17] border border-slate-800 px-3 py-2 text-xs text-white disabled:opacity-40"
+                className="w-full rounded-2xl theme-elevated px-3 py-2 text-xs disabled:opacity-50"
               >
-                {Object.values(EdgeRelationType).map((rel) => (
-                  <option key={rel} value={rel}>
-                    {rel}
+                {Object.values(EdgeRelationType).map((r) => (
+                  <option key={r} value={r}>
+                    {r}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          <div className="border-t border-slate-800 pt-3">
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Updated Sub-Topic Summary (v{subtopic.version + 1} — Visible to All Agents)
+          <div>
+            <label className="block text-xs font-medium theme-text-secondary mb-1">
+              Updated Sub-Topic Summary (v{subtopic.version + 1})
             </label>
             <textarea
-              rows={3}
+              rows={2}
               required
               value={updatedSummary}
               onChange={(e) => setUpdatedSummary(e.target.value)}
-              className="w-full bg-[#0B0F17] border border-slate-800 p-3 text-xs text-emerald-200 focus:outline-none focus:border-emerald-500"
+              className="w-full rounded-2xl theme-elevated p-3 text-xs focus:outline-none"
             />
           </div>
 
@@ -415,16 +354,16 @@ export const MutateSubtopicModal: React.FC<MutateSubtopicModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-300 hover:text-white"
+              className="bubble-btn px-4 py-2 text-xs font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 text-xs font-semibold bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+              className="bubble-emerald px-5 py-2 text-xs font-semibold disabled:opacity-50"
             >
-              {submitting ? 'Committing to Graph…' : `Commit & Bump to v${subtopic.version + 1}`}
+              {submitting ? 'Saving…' : 'Save to Graph'}
             </button>
           </div>
         </form>
@@ -449,14 +388,13 @@ export const FalkorConfigDrawer: React.FC<FalkorConfigDrawerProps> = ({
   onResetGraph,
 }) => {
   const [url, setUrl] = useState(
-    state.falkorEndpoint.startsWith('redis') ? state.falkorEndpoint : 'redis://localhost:6379'
+    state.falkorConnected ? state.falkorEndpoint : 'redis://localhost:6379'
   );
   const [graphName, setGraphName] = useState('engram_multi_agent_memory');
-  const [cypherScript, setCypherScript] = useState<string>('');
+  const [cypherScript, setCypherScript] = useState('');
   const [copied, setCopied] = useState(false);
-  const [statusMsg, setStatusMsg] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -467,7 +405,7 @@ export const FalkorConfigDrawer: React.FC<FalkorConfigDrawerProps> = ({
         })
         .catch(() => {});
     }
-  }, [isOpen, state.nodes.length, state.subtopics.length]);
+  }, [isOpen, state]);
 
   if (!isOpen) return null;
 
@@ -475,12 +413,11 @@ export const FalkorConfigDrawer: React.FC<FalkorConfigDrawerProps> = ({
     e.preventDefault();
     setConnecting(true);
     setStatusMsg(null);
-    setErrorMsg(null);
     try {
       await onConnectFalkor(url.trim(), graphName.trim());
-      setStatusMsg(`Connected to ${url.trim()} and synced graph '${graphName.trim()}'.`);
+      setStatusMsg('Connected and synced graph to FalkorDB!');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Could not reach FalkorDB instance.');
+      setStatusMsg(err?.message || 'Using built-in persistent Cypher engine');
     } finally {
       setConnecting(false);
     }
@@ -493,33 +430,27 @@ export const FalkorConfigDrawer: React.FC<FalkorConfigDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-      <div className="w-full max-w-2xl border border-slate-700 bg-[#0F1522] text-slate-100">
-        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-xs p-4">
+      <div className="w-full max-w-xl rounded-3xl theme-surface overflow-hidden">
+        <div className="flex items-center justify-between border-b border-slate-500/15 px-6 py-4">
           <div className="flex items-center gap-2">
-            <Database className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm font-semibold text-white">
-              FalkorDB Storage Engine & Cypher Schema Export
-            </h3>
+            <Database className="w-4 h-4 text-emerald-500" />
+            <h3 className="text-sm font-bold">FalkorDB Connection & Cypher Export</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-full theme-text-secondary hover:opacity-75"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-5 space-y-5 max-h-[82vh] overflow-y-auto">
-          <form onSubmit={handleConnect} className="space-y-3 border-b border-slate-800 pb-5">
-            <div className="text-xs text-slate-300 leading-relaxed">
-              EngramGraph persists all graph mutations immediately via its built-in persistent Cypher engine and can simultaneously mirror every <code className="font-mono text-emerald-400">MATCH / MERGE / CREATE</code> query to a live FalkorDB Docker or FalkorDB Cloud instance.
-            </div>
-
+        <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+          <form onSubmit={handleConnect} className="space-y-3 border-b border-slate-500/15 pb-5">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-slate-400 mb-1">
+                <label className="block text-xs font-medium theme-text-secondary mb-1">
                   FalkorDB Endpoint URI
                 </label>
                 <input
@@ -527,61 +458,57 @@ export const FalkorConfigDrawer: React.FC<FalkorConfigDrawerProps> = ({
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="redis://localhost:6379"
-                  className="w-full bg-[#0B0F17] border border-slate-800 px-3 py-2 font-mono text-xs text-white"
+                  className="w-full rounded-2xl theme-elevated px-3.5 py-2 font-mono text-xs"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">
-                  Multigraph Namespace
+                <label className="block text-xs font-medium theme-text-secondary mb-1">
+                  Graph Namespace
                 </label>
                 <input
                   type="text"
                   value={graphName}
                   onChange={(e) => setGraphName(e.target.value)}
-                  className="w-full bg-[#0B0F17] border border-slate-800 px-3 py-2 font-mono text-xs text-white"
+                  className="w-full rounded-2xl theme-elevated px-3.5 py-2 font-mono text-xs"
                 />
               </div>
             </div>
 
-            {statusMsg && <p className="text-xs text-emerald-400">{statusMsg}</p>}
-            {errorMsg && <p className="text-xs text-amber-400">{errorMsg}</p>}
+            {statusMsg && <p className="text-xs text-emerald-500">{statusMsg}</p>}
 
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center justify-between pt-2">
               <button
                 type="button"
                 onClick={onResetGraph}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-800 text-slate-300 hover:text-white transition-colors"
+                className="bubble-btn inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                Reset Graph to Default Seed
+                Reset Default Graph
               </button>
 
               <button
                 type="submit"
                 disabled={connecting}
-                className="px-4 py-2 text-xs font-semibold bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+                className="bubble-emerald px-5 py-2 text-xs font-semibold disabled:opacity-50"
               >
-                {connecting ? 'Connecting…' : 'Connect & Sync Live FalkorDB'}
+                {connecting ? 'Connecting…' : 'Sync FalkorDB'}
               </button>
             </div>
           </form>
 
-          {/* Complete FalkorDB Cypher Dump */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-white">
-                Complete FalkorDB Cypher Graph Script ({state.subtopics.length} Sub-Topics, {state.nodes.length} Nodes, {state.edges.length} Edges)
-              </span>
+              <span className="text-xs font-semibold">FalkorDB Cypher Script</span>
               <button
                 type="button"
                 onClick={handleCopy}
-                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-slate-800 text-slate-200 hover:bg-slate-700"
+                className="bubble-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                {copied ? 'Copied Cypher' : 'Copy Cypher Script'}
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? 'Copied' : 'Copy Cypher'}
               </button>
             </div>
-            <pre className="bg-[#0B0F17] border border-slate-800 p-3.5 font-mono text-[11px] text-emerald-300 max-h-64 overflow-y-auto leading-relaxed">
+            <pre className="rounded-2xl theme-elevated p-4 font-mono text-[11px] max-h-56 overflow-y-auto leading-relaxed">
               {cypherScript || '// Loading Cypher script...'}
             </pre>
           </div>
@@ -660,77 +587,59 @@ export const IngestDocumentModal: React.FC<IngestDocumentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-      <div className="w-full max-w-xl border border-slate-700 bg-[#0F1522] text-slate-100 rounded-lg overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
-          <h3 className="text-sm font-semibold text-white">
-            Ingest Docs / Repo Specs → Auto-Partition into Graph
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-xs p-4">
+      <div className="w-full max-w-xl rounded-3xl theme-surface overflow-hidden">
+        <div className="flex items-center justify-between border-b border-slate-500/15 px-6 py-4">
+          <h3 className="text-sm font-bold">
+            Ingest Docs → Auto-Split into Graph Bubbles
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-full theme-text-secondary hover:opacity-75"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Paste raw PRDs, architecture specs, runbooks, or upload a <code className="font-mono text-emerald-300">.md / .txt</code> file. EngramGraph automatically splits the content into distinct Sub-Topics, atomic Memory Nodes, and a cross-topic traversal path.
-          </p>
-
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                Document / Spec Title
+              <label className="block text-xs font-medium theme-text-secondary mb-1">
+                Document Title
               </label>
               <input
                 type="text"
                 required
                 value={documentTitle}
                 onChange={(e) => setDocumentTitle(e.target.value)}
-                placeholder="e.g., Payment Settlement Architecture"
-                className="w-full bg-[#0B0F17] border border-slate-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                className="w-full rounded-2xl theme-elevated px-3.5 py-2 text-xs focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
+              <label className="block text-xs font-medium theme-text-secondary mb-1">
                 Upload .md / .txt File (Optional)
               </label>
               <input
                 type="file"
                 accept=".md,.txt,.json,.csv"
                 onChange={handleFileUpload}
-                className="w-full bg-[#0B0F17] border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-300 file:mr-2 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-800 file:text-emerald-300"
+                className="w-full rounded-2xl theme-elevated px-3 py-1.5 text-xs"
               />
             </div>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-medium text-slate-300">
-                Raw Document / Codebase Specification
-              </label>
-              <button
-                type="button"
-                onClick={() => {
-                  setDocumentTitle('Merchant Payments & PCI Architecture');
-                  setRawText(SAMPLE_CORPORATE_SPEC);
-                }}
-                className="text-[11px] text-emerald-400 hover:underline"
-              >
-                Load Sample FinTech Spec
-              </button>
-            </div>
+            <label className="block text-xs font-medium theme-text-secondary mb-1">
+              Raw Document or Repo Notes
+            </label>
             <textarea
-              rows={7}
+              rows={6}
               required
               value={rawText}
               onChange={(e) => setRawText(e.target.value)}
-              placeholder="Paste your company documentation, system architecture, or codebase rules..."
-              className="w-full bg-[#0B0F17] border border-slate-800 rounded p-3 text-xs text-white font-mono leading-relaxed focus:outline-none focus:border-emerald-500"
+              className="w-full rounded-2xl theme-elevated p-3.5 text-xs font-mono leading-relaxed focus:outline-none"
             />
           </div>
 
@@ -738,16 +647,16 @@ export const IngestDocumentModal: React.FC<IngestDocumentModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white"
+              className="bubble-btn px-4 py-2 text-xs font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="tactile-emerald px-4 py-2 rounded-md text-xs font-semibold disabled:opacity-50"
+              className="bubble-emerald px-5 py-2 text-xs font-semibold disabled:opacity-50"
             >
-              {submitting ? 'Partitioning into Sub-Topics…' : 'Auto-Partition & Commit to Graph'}
+              {submitting ? 'Splitting into Sub-Topics…' : 'Auto-Split into Graph'}
             </button>
           </div>
         </form>
@@ -797,99 +706,92 @@ export const NewWorkspaceModal: React.FC<NewWorkspaceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-      <div className="w-full max-w-md border border-slate-700 bg-[#0F1522] text-slate-100 rounded-lg overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
-          <h3 className="text-sm font-semibold text-white">
-            Create New Corporate Graph Workspace
-          </h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-xs p-4">
+      <div className="w-full max-w-md rounded-3xl theme-surface overflow-hidden">
+        <div className="flex items-center justify-between border-b border-slate-500/15 px-6 py-4">
+          <h3 className="text-sm font-bold">New Project Workspace</h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-full theme-text-secondary hover:opacity-75"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Workspace / Project Name
+            <label className="block text-xs font-medium theme-text-secondary mb-1">
+              Workspace Name
             </label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., FinOps Production Agents"
-              className="w-full bg-[#0B0F17] border border-slate-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+              placeholder="e.g., FinOps Production Graph"
+              className="w-full rounded-2xl theme-elevated px-3.5 py-2 text-xs focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Workspace Purpose
+            <label className="block text-xs font-medium theme-text-secondary mb-1">
+              Short Description
             </label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g., Shared memory graph for our billing and compliance agents"
-              className="w-full bg-[#0B0F17] border border-slate-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+              placeholder="e.g., Shared memory graph for billing agents"
+              className="w-full rounded-2xl theme-elevated px-3.5 py-2 text-xs focus:outline-none"
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-slate-300">
-              Starting Graph Template
-            </label>
-            <div className="grid grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => setTemplate('blank')}
-                className={`p-3 rounded border text-left transition-colors ${
-                  template === 'blank'
-                    ? 'bg-[#162235] border-emerald-500/70 text-white'
-                    : 'bg-[#0B0F17] border-slate-800 text-slate-400'
-                }`}
-              >
-                <div className="text-xs font-semibold">Blank Workspace</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">
-                  Start clean & ingest your own docs
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTemplate('enterprise_sample')}
-                className={`p-3 rounded border text-left transition-colors ${
-                  template === 'enterprise_sample'
-                    ? 'bg-[#162235] border-emerald-500/70 text-white'
-                    : 'bg-[#0B0F17] border-slate-800 text-slate-400'
-                }`}
-              >
-                <div className="text-xs font-semibold">Cloud Reference</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">
-                  Pre-loaded 5 sub-topics & 4 agents
-                </div>
-              </button>
-            </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={() => setTemplate('blank')}
+              className={`p-3.5 rounded-2xl border text-left transition-all ${
+                template === 'blank'
+                  ? 'border-emerald-500 bg-emerald-500/10'
+                  : 'theme-elevated'
+              }`}
+            >
+              <div className="text-xs font-bold">Blank Graph</div>
+              <div className="text-[11px] theme-text-secondary mt-0.5">
+                Start fresh & ingest docs
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTemplate('enterprise_sample')}
+              className={`p-3.5 rounded-2xl border text-left transition-all ${
+                template === 'enterprise_sample'
+                  ? 'border-emerald-500 bg-emerald-500/10'
+                  : 'theme-elevated'
+              }`}
+            >
+              <div className="text-xs font-bold">Sample Graph</div>
+              <div className="text-[11px] theme-text-secondary mt-0.5">
+                Pre-loaded 5 sub-topics
+              </div>
+            </button>
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white"
+              className="bubble-btn px-4 py-2 text-xs font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="tactile-emerald px-4 py-2 rounded-md text-xs font-semibold disabled:opacity-50"
+              className="bubble-emerald px-5 py-2 text-xs font-semibold disabled:opacity-50"
             >
-              {submitting ? 'Creating…' : 'Create Workspace'}
+              {submitting ? 'Creating…' : 'Create Project'}
             </button>
           </div>
         </form>
@@ -897,4 +799,3 @@ export const NewWorkspaceModal: React.FC<NewWorkspaceModalProps> = ({
     </div>
   );
 };
-

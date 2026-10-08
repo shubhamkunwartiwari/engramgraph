@@ -1,18 +1,48 @@
 @import "tailwindcss";
 
 @layer base {
-  :root {
+  :root,
+  [data-theme="light"] {
     --font-display: 'Syne', sans-serif;
     --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
+
+    --bg-app: #F4F7FB;
+    --bg-surface: #FFFFFF;
+    --bg-elevated: #F8FAFC;
+    --bg-canvas: #EEF3F9;
+    --border-subtle: #E2E8F0;
+    --border-strong: #CBD5E1;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #64748B;
+    --accent-emerald: #10B981;
+    --accent-soft: rgba(16, 185, 129, 0.12);
+    --shadow-card: 0 10px 30px -10px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  }
+
+  [data-theme="dark"] {
+    --bg-app: #0B0F17;
+    --bg-surface: #121826;
+    --bg-elevated: #182132;
+    --bg-canvas: #0E1420;
+    --border-subtle: #1E293B;
+    --border-strong: #334155;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --accent-emerald: #10B981;
+    --accent-soft: rgba(16, 185, 129, 0.16);
+    --shadow-card: 0 14px 34px -10px rgba(0, 0, 0, 0.45);
   }
 
   body {
     font-family: var(--font-sans);
-    background-color: #090C10;
-    color: #F1F5F9;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
     letter-spacing: 0.005em;
     overflow-x: hidden;
+    transition: background-color 180ms ease, color 180ms ease;
   }
 
   h1, h2, .font-display {
@@ -26,55 +56,108 @@
   }
 }
 
-/* Tactile bespoke interactive controls */
-.tactile-btn {
+/* Bubbly Surface Helpers */
+.theme-app {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+}
+
+.theme-surface {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
+}
+
+.theme-elevated {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.theme-canvas {
+  background-color: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+}
+
+.theme-text-secondary {
+  color: var(--text-secondary);
+}
+
+.theme-text-muted {
+  color: var(--text-muted);
+}
+
+/* Soft Bubbly Interactive Buttons */
+.tactile-btn,
+.bubble-btn {
   position: relative;
-  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1), background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
-  box-shadow: 0 2px 0 0 rgba(255, 255, 255, 0.07) inset, 0 3px 0 0 #040608;
+  border-radius: 9999px;
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 160ms ease, background-color 160ms ease, border-color 160ms ease;
+  box-shadow: 0 3px 0 0 var(--border-strong);
 }
 
-.tactile-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 0 0 rgba(255, 255, 255, 0.12) inset, 0 4px 0 0 #040608;
+.tactile-btn:hover:not(:disabled),
+.bubble-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: #10B981;
+  box-shadow: 0 5px 0 0 rgba(16, 185, 129, 0.35);
 }
 
-.tactile-btn:active:not(:disabled) {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset, 0 1px 0 0 #040608;
+.tactile-btn:active:not(:disabled),
+.bubble-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 0 var(--border-strong);
 }
 
-.tactile-emerald {
-  background: linear-gradient(180deg, #10B981 0%, #059669 100%);
-  color: #03150E;
-  border: 1px solid #34D399;
-  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.35) inset, 0 3px 0 0 #064E3B;
-}
-
-.tactile-emerald:hover:not(:disabled) {
+.tactile-emerald,
+.bubble-emerald {
+  border-radius: 9999px;
   background: linear-gradient(180deg, #34D399 0%, #10B981 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.45) inset, 0 4px 0 0 #064E3B;
+  color: #042F1E;
+  border: 1px solid #059669;
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 160ms ease, filter 160ms ease;
+  box-shadow: 0 2px 0 0 rgba(255, 255, 255, 0.4) inset, 0 4px 0 0 #047857;
 }
 
-.tactile-emerald:active:not(:disabled) {
+.tactile-emerald:hover:not(:disabled),
+.bubble-emerald:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.03);
+  box-shadow: 0 2px 0 0 rgba(255, 255, 255, 0.5) inset, 0 6px 0 0 #047857;
+}
+
+.tactile-emerald:active:not(:disabled),
+.bubble-emerald:active:not(:disabled) {
   transform: translateY(2px);
-  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.2) inset, 0 1px 0 0 #064E3B;
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.25) inset, 0 1px 0 0 #047857;
 }
 
-.tactile-rose {
-  background: linear-gradient(180deg, #2A1219 0%, #190B0F 100%);
-  color: #FDA4AF;
-  border: 1px solid rgba(244, 63, 94, 0.45);
-  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset, 0 3px 0 0 #090406;
+.tactile-rose,
+.bubble-rose {
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #FFE4E6 0%, #FECDD3 100%);
+  color: #9F1239;
+  border: 1px solid #FDA4AF;
+  transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 160ms ease;
+  box-shadow: 0 3px 0 0 #FB7185;
 }
 
-.tactile-rose:hover:not(:disabled) {
-  background: linear-gradient(180deg, #381620 0%, #220D13 100%);
-  border-color: rgba(244, 63, 94, 0.75);
-  transform: translateY(-1px);
+[data-theme="dark"] .tactile-rose,
+[data-theme="dark"] .bubble-rose {
+  background: linear-gradient(180deg, #3F1521 0%, #290D16 100%);
+  color: #FECDD3;
+  border: 1px solid #F43F5E;
+  box-shadow: 0 3px 0 0 #881337;
 }
 
-.tactile-rose:active:not(:disabled) {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 0 #090406;
+.tactile-rose:hover:not(:disabled),
+.bubble-rose:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.tactile-rose:active:not(:disabled),
+.bubble-rose:active:not(:disabled) {
+  transform: translateY(1px);
 }
