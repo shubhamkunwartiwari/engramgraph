@@ -1,0 +1,25 @@
+{
+  "title": "When Does Sub-Graph Paging Help? An Empirical Comparison of Full-Context, Top-K, Personalized PageRank, and Summary-Indexed Graph Memory for Multi-Agent Systems",
+  "version": "4.2.0",
+  "upload_type": "publication",
+  "publication_type": "article",
+  "description": "<p>An empirical study and reproducible benchmark suite evaluating four competing retrieval paradigms for multi-agent software engineering memory under identical compact tuple serialization (25 tokens/node) across five scale tiers (20 to 800 nodes, 300 multi-hop causal path queries):</p><ol><li><strong>Small Graphs (&le; 144 nodes / &le; 3.6k compact tokens):</strong> Full-Context serialization achieves 100% path and node coverage with zero routing overhead.</li><li><strong>Failure Mode of Naive Summary Paging (EngramGraph v1):</strong> Routing solely on 2-sentence sub-topic summaries degrades from 95.0% at 20 nodes to 58.3% at 384 nodes and 30.0% at 800 nodes due to summary compression loss and unmounted cross-topic bridges.</li><li><strong>Structural &amp; Anchor Mitigation (EngramGraph v2):</strong> Augmenting summary routing with an Entity-Anchor Footer (+12 tok/sub-topic), 1-Hop Bidirectional Bridge Closure, and Anchor-Seeded Subgraph Projection recovers complete-chain recall to 86.7% at 384 nodes (95.6% node coverage) and 88.3% at 800 nodes (96.1% node coverage) while reducing active prompt tokens by 77.2% to 87.7% compared to compact Full Context, and outperforming equal-budget Flat Top-K by +20.0 to +26.6 percentage points (McNemar p &lt; 0.001).</li><li><strong>Read-Only Global PPR vs. Read/Write Sub-Topic Isolation:</strong> Budget-Matched HippoRAG (Global Personalized PageRank) achieves the highest read-only recall on static graphs (98.3% at 384 nodes; 93.3% at 800 nodes), whereas EngramGraph v2 provides partitioned sub-topic write leases and Optimistic Concurrency Control (OCC) for concurrent multi-agent mutation workloads with zero silent lost updates.</li></ol>",
+  "creators": [
+    {
+      "name": "Tiwary, Shubham Kunwar",
+      "affiliation": "Department of Artificial Intelligence and Data Science",
+      "orcid": "0009-0004-8262-7647"
+    }
+  ],
+  "license": "MIT",
+  "keywords": [
+    "multi-agent-systems",
+    "graph-memory",
+    "personalized-pagerank",
+    "hipporag",
+    "model-context-protocol",
+    "context-paging",
+    "optimistic-concurrency-control",
+    "large-language-models"
+  ]
+}

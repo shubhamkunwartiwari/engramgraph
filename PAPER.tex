@@ -1,0 +1,226 @@
+% ============================================================================
+% Evaluating Summary-Indexed Sub-Graph Paging Against Full-Context, Top-K,
+% and Personalized PageRank in Multi-Agent Graph Memory (v4.2 -- Comparative
+% Empirical Study & Application Guidelines)
+% ============================================================================
+% IMPORTANT: In Overleaf, select ALL existing text in main.tex (Ctrl+A),
+% delete it completely, and paste this entire file from line 1.
+% Uses ONLY standard base LaTeX2e + graphicx (Zero external package errors).
+% ============================================================================
+
+\documentclass[10pt]{article}
+\usepackage{graphicx}
+
+% Clean, wide academic page layout using native TeX dimensions (no extra packages needed)
+\setlength{\textwidth}{6.8in}
+\setlength{\oddsidemargin}{-0.15in}
+\setlength{\evensidemargin}{-0.15in}
+\setlength{\topmargin}{-0.6in}
+\setlength{\textheight}{9.2in}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+
+\title{\LARGE \textbf{When Does Sub-Graph Paging Help? An Empirical Comparison of Full-Context, Top-$K$, Personalized PageRank, and Summary-Indexed Graph Memory for Multi-Agent Systems}}
+
+\author{
+  \textbf{Shubham Kunwar Tiwary}\\[3pt]
+  \small Department of Artificial Intelligence and Data Science\\
+  \small Email: \texttt{shubhamkunwartiwari@gmail.com} \quad|\quad ORCID: \texttt{0009-0004-8262-7647}\\
+  \small Preprint DOI: \texttt{10.5281/zenodo.23250573} \quad|\quad Version 4.2.0 (Comparative Empirical Study)
+}
+
+\date{October 8, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+External knowledge graphs are increasingly used via the Model Context Protocol (MCP) to share long-term state across heterogeneous coding and operations agents. However, practitioners lack clear empirical guidance on how different graph retrieval paradigms trade off active prompt tokens, multi-hop causal completeness, and concurrent write isolation as graphs grow. In this study, we conduct a controlled, $100\%$ reproducible in-process benchmark (\texttt{server/graphStore.ts}) comparing five memory paradigms across graph scales from $20$ to $800$ nodes under equal $25$-token/node compact serialization: (1)~\textbf{Compact Full Context}, (2)~\textbf{Flat and Budget-Matched Lexical Top-$K$}, (3)~\textbf{1-Hop Neighborhood Expansion}, (4)~\textbf{Global Personalized PageRank (PPR)}, and (5)~\textbf{Summary-Indexed Sub-Graph Paging} (\textbf{EngramGraph}). Rather than advocating a single one-size-fits-all method, our study establishes four empirical findings that map each paradigm to its appropriate operational regime. First, for small graphs ($|V| \le 144$, $\le 3,600$ compact tokens), sub-graph paging is unnecessary because Compact Full Context fits directly in the prompt with $100.0\%$ coverage and zero routing overhead. Second, naive two-sentence summary paging (\textbf{EngramGraph v1}) degrades sharply on larger graphs ($41.7\%$ complete-chain recovery at $384$ nodes; $30.0\%$ at $800$ nodes) due to summary compression loss and unmounted cross-partition bridges. Third, augmenting summary paging with an \textbf{Entity-Anchor Index}, \textbf{Bidirectional 2-Hop Bridge Closure}, and \textbf{Intra-Subtopic Subgraph Projection} (\textbf{EngramGraph v2}) recovers $+45.0$ to $+58.3$~percentage points over naive paging—reaching $86.7\%$--$88.3\%$ complete-chain recovery ($95.1\%$--$96.1\%$ node coverage) while cutting single-call active tokens by $81.8\%$--$87.7\%$ vs.\ full context and outperforming equal-budget Top-$K$ by $+11.7$ to $+26.6$~pp. Fourth, for purely read-only workloads, unpartitioned Global PPR achieves slightly higher chain recovery ($93.3\%$--$95.0\%$), whereas EngramGraph v2 is specifically suited for large, write-intensive multi-agent workspaces that require explicit domain leases and Optimistic Concurrency Control (OCC).
+\end{abstract}
+
+% ============================================================================
+\section{Introduction \& Research Questions}
+% ============================================================================
+When multiple LLM agents (e.g., Claude Code CLI, OpenAI Codex CLI, Gemini, or local open-weight models connected via MCP) collaborate on a software system, externalizing shared state into a property graph $G=(V,E)$ avoids locking conversation history inside a single model provider's context window. Yet once state resides in an external graph, system designers must choose a retrieval mechanism to assemble each turn's active prompt.
+
+Existing literature proposes widely divergent strategies: dumping the serialized graph into long-context windows, retrieving flat Top-$K$ node matches~\cite{chhikara2025mem0,anthropic2024mcp}, expanding 1-hop local neighborhoods~\cite{guo2024lightrag}, running global Personalized PageRank (PPR) walks~\cite{gutierrez2024hipporag}, or paging partitioned sub-graphs via natural-language summaries~\cite{packer2023memgpt,edge2024graphrag}. To evaluate these trade-offs without cherry-picked prompts or unequal formatting overhead, we investigate three empirical research questions:
+\begin{enumerate}
+  \setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}
+  \item \textbf{RQ1 (Scaling \& Failure Modes of Naive Summary Paging):} How does naive two-sentence summary paging (\textbf{EngramGraph v1}) perform as graph size scales from $20$ to $800$ nodes, and what causes its retrieval failures on multi-hop causal chains?
+  \item \textbf{RQ2 (Impact of Structural \& Anchor Mitigation):} How much multi-hop retrieval accuracy is recovered when summary paging is augmented with deterministic entity anchors, bidirectional cross-topic bridge closure, and intra-subtopic subgraph projection (\textbf{EngramGraph v2})?
+  \item \textbf{RQ3 (Comparative Regimes \& Practical Application):} Under equal $25$-token/node compact serialization, when should engineers choose Compact Full Context, Budget-Matched Top-$K$, Global PPR, or Partitioned Sub-Graph Paging (EngramGraph v2)?
+\end{enumerate}
+
+% ============================================================================
+\section{Compared Retrieval Paradigms}
+% ============================================================================
+All compared methods operate over the exact same property graph $G=(V,E)$ and serialize selected nodes using the same $25$-token/node compact tuple format:
+\begin{enumerate}
+  \setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}
+  \item \textbf{Compact Full Context (Upper Bound):} Serializes all $|V|$ nodes and $|E|$ edges directly into the prompt ($\mathcal{T}_{\mathrm{full}} = 25|V|$ tokens; verbose JSON at $88$~tok/node is also reported for reference). Guarantees $100.0\%$ in-prompt path coverage at $\mathcal{O}(|V|)$ token cost per turn.
+  \item \textbf{Flat Lexical Top-$K$ ($K=5$) and Budget-Matched Top-$K$:} Scores all nodes $v \in V$ by query token and identifier overlap~\cite{chhikara2025mem0}. Flat Top-$K=5$ uses a fixed $125$-token budget; Budget-Matched Top-$K$ is granted the exact same active token budget as EngramGraph v2 ($K \in [18, 98]$ full nodes).
+  \item \textbf{1-Hop Neighborhood Expansion (LightRAG-style~\cite{guo2024lightrag}):} Selects the top lexical seed nodes and expands all incident 1-hop edges $(u,v) \in E$ up to the matched token budget.
+  \item \textbf{Global Personalized PageRank (HippoRAG-style~\cite{gutierrez2024hipporag}):} Initializes a teleportation vector over the top query-matched seed nodes and executes $15$ power iterations of Personalized PageRank ($\alpha = 0.15$) across the full unpartitioned adjacency matrix of $G$, selecting the highest-stationary-probability nodes up to the matched token budget.
+  \item \textbf{Naive Summary-Indexed Paging (EngramGraph v1):} Partitions $G$ into $k$ domain Sub-Topics $S_1, \dots, S_k$, presents a directory of two-sentence prose summaries $\sigma(S_i)$ ($35$ tokens/sub-topic), routes the query to the top $|\mathcal{M}_a|=2$ sub-topics, and mounts their member nodes without cross-topic bridge closure.
+\end{enumerate}
+
+% ============================================================================
+\section{Diagnosing \& Mitigating Summary Paging Bottlenecks (EngramGraph v2)}
+% ============================================================================
+Our evaluation of \textbf{EngramGraph v1} (Table~\ref{tab:accuracy}) reveals that naive prose summary paging degrades from $80.0\%$ complete-chain recovery at $48$ nodes down to $41.7\%$ at $384$ nodes and $30.0\%$ at $800$ nodes. Inspecting the failed queries identifies three structural bottlenecks, which we address in \textbf{EngramGraph v2} (\texttt{server/graphStore.ts}):
+
+\subsection{Bottleneck 1: Summary Compression Loss $\rightarrow$ Hybrid Entity-Anchor Index}
+Because a fixed sub-topic size cap $\tau_{\max}$ forces $k = \mathcal{O}(|V|/\tau_{\max})$ to grow linearly with $|V|$, each sub-topic in a larger graph holds $12$--$20$ nodes. A two-sentence prose summary ($\sim 35$ tokens) summarizes only the first few nodes and drops specific service identifiers or metric thresholds (e.g., \texttt{SVC-0412}, \texttt{lat\_45ms}). In \texttt{extractEntityAnchorsForSubtopic()}, EngramGraph v2 appends a deterministic $7$-token \textbf{Entity-Anchor Footer} constructed in two passes: Pass~1 extracts the primary alphanumeric ID or title keyword from \emph{every} node $v \in V_i$, and Pass~2 appends operational metric tags up to $36$ anchors. Increasing index cost from $35$ to $42$ tokens/sub-topic ($\mathcal{T}_{\mathrm{idx}} = 42k$) raises Tier-XL Stage-1 routing accuracy from $30.0\%$ to $86.7\%$.
+
+\subsection{Bottleneck 2: Unmounted Cross-Topic Bridges $\rightarrow$ Bidirectional Bridge Closure}
+In a multi-hop causal chain $u \to b_1 [\to b_2] \to v$ where $u \in S_a$, $v \in S_c$, and the unnamed intermediate bridge node $b_1 \in S_b$ lies in a third sub-topic $S_b \notin \mathcal{M}_a$, mounting only $\mathcal{M}_a = \{S_a, S_c\}$ leaves $b_1$ unmounted. In \texttt{findBridgeNodesBetweenSubtopics()}, EngramGraph v2 runs an in-memory bidirectional Breadth-First Search (BFS) across $E$ to identify the 1-hop unmounted boundary frontier $F_1$ (excluding generic global telemetry hubs) and automatically attaches any \textbf{1-node bridge} $b_1 \in F_1$ or \textbf{2-node bridge} $(b_1, b_2) \in F_1 \times F_1$ that structurally links two distinct mounted sub-topics $S_a \neq S_c \in \mathcal{M}_a$. On Tier-L ($384$ nodes), this adds $45$ tokens on average while boosting complete-chain recovery by $+18.4$~pp ($68.3\% \to 86.7\%$, Table~\ref{tab:ablation}).
+
+\subsection{Bottleneck 3: Partition Bloat $\rightarrow$ Intra-Subtopic Subgraph Projection}
+Mounting all $16$--$20$ nodes of a sub-topic wastes tokens on unvisited sibling nodes. When $|V_j| > 10$, \texttt{projectSubtopicNodes()} keeps up to $10$ full nodes ($25$ tok/node) comprising the query-matched seeds plus their 1-hop and 2-hop local causal neighbors inside $S_j$, and compresses the remaining $|V_j|-10$ sibling nodes into $6$-token title stubs (\texttt{[Stub id: title]}), reducing active tokens with zero loss in path recovery ($86.7\%$ vs.\ $86.7\%$ on Tier-L).
+
+% ============================================================================
+\begin{table}[!htbp]
+\centering
+\caption{\textbf{Token Complexity and 2-Call Routing Cost Across Five Graph Scales} (Live Deterministic Execution in \texttt{server/graphStore.ts}). All methods use equal Compact Tuple Serialization ($25$~tok/full node, $6$~tok/stub, $42$~tok/indexed sub-topic); Verbose JSON ($88$~tok/node) is shown for reference. $\mathcal{T}_{\mathrm{2call}} = \mathcal{T}_{\mathrm{idx}} + \mathcal{T}_{\mathrm{active}}$ sums Call~1 (Index Routing) and Call~2 (Mounted Reasoning).}
+\label{tab:tokens}
+\vspace{4pt}
+\renewcommand{\arraystretch}{1.28}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|c|c|c|c|c|c|c|}
+\hline
+\textbf{Graph Tier} & \textbf{Topics / Nodes / Edges} & \textbf{Mounted} & \textbf{Full Ctx} & \textbf{Full Ctx} & \textbf{Engram v2 Single-Call} & \textbf{Engram v2 2-Call Total} & \textbf{Savings vs.\ Compact} \\
+\textbf{(Seeded In-Process)} & $k$ / $|V|$ / $|E|$ & $|\mathcal{M}_a|$ & \textbf{(JSON 88t)} & \textbf{(Compact 25t)} & $\mathcal{T}_{\mathrm{active}} = \mathcal{T}_{\mathrm{idx}} + \mathcal{T}_{\mathrm{mnt}}$ & $\mathcal{T}_{\mathrm{2call}} = 2\mathcal{T}_{\mathrm{idx}} + \mathcal{T}_{\mathrm{mnt}}$ & \textbf{1-Call / 2-Call (vs.\ JSON)} \\
+\hline
+Live Workspace & $5$ / $20$ / $8$ & $2.0$ & $1,760$ & $500$ & $\mathbf{460}$ ($210+250$) & $\mathbf{670}$ & $8.0\%$ / $0.0\%$ ($73.9\%$) \\
+Tier-S ($48$ Nodes) & $6$ / $48$ / $80$ & $2.0$ & $4,224$ & $1,200$ & $\mathbf{774}$ ($252+522$) & $\mathbf{1,026}$ & $35.5\%$ / $14.5\%$ ($81.7\%$) \\
+Tier-M ($144$ Nodes) & $12$ / $144$ / $220$ & $2.0$ & $12,672$ & $3,600$ & $\mathbf{1,161}$ ($504+657$) & $\mathbf{1,665}$ & $67.8\%$ / $53.8\%$ ($90.8\%$) \\
+Tier-L ($384$ Nodes) & $24$ / $384$ / $577$ & $2.0$ & $33,792$ & $9,600$ & $\mathbf{1,743}$ ($1008+735$) & $\mathbf{2,751}$ & $\mathbf{81.8\%}$ / $\mathbf{71.3\%}$ ($94.8\%$) \\
+Tier-XL ($800$ Nodes) & $40$ / $800$ / $1,195$ & $2.0$ & $70,400$ & $20,000$ & $\mathbf{2,462}$ ($1680+782$) & $\mathbf{4,142}$ & $\mathbf{87.7\%}$ / $\mathbf{79.3\%}$ ($96.5\%$) \\
+\hline
+\end{tabular}%
+}
+\end{table}
+% ============================================================================
+
+% ============================================================================
+\begin{table}[!htbp]
+\centering
+\caption{\textbf{Comparative Multi-Hop Path Coverage ($\mathrm{Cov}_{\mathrm{path}}$) and Complete Causal-Chain Recovery ($\mathrm{Acc}_{\mathrm{chain}}$) Across Five Graph Scales} ($40$--$60$ Queries/Tier, Equal $25$~tok/node Serialization, 95\% Wilson CIs). Compares Full Context (Upper Bound), Flat Top-$K=5$, Budget-Matched Top-$K$, 1-Hop Expansion, Global Personalized PageRank (PPR, $\alpha=0.15, 15$ iters), Naive Summary Paging (v1), and Upgraded Summary Paging (v2).}
+\label{tab:accuracy}
+\vspace{4pt}
+\renewcommand{\arraystretch}{1.28}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|}
+\hline
+\textbf{Graph Tier} & \textbf{Full Ctx} & \textbf{Flat Top-$K=5$} & \textbf{Budget Top-$K$} & \textbf{1-Hop Exp.} & \textbf{Global PPR ($\alpha=0.15$)} & \textbf{Naive Summary (v1)} & \textbf{EngramGraph v2} & \textbf{v2 vs.\ v1 Gain} \\
+(Queries $N$) & (Upper Bound) & $\mathrm{Cov}$ / $\mathrm{Acc}_{\mathrm{chain}}$ & $\mathrm{Cov}$ / $\mathrm{Acc}_{\mathrm{chain}}$ & $\mathrm{Acc}_{\mathrm{chain}}$ & $\mathrm{Cov}$ / $\mathrm{Acc}_{\mathrm{chain}}$ [CI] & Route / $\mathrm{Acc}_{\mathrm{chain}}$ & Route / $\mathrm{Cov}$ / $\mathrm{Acc}_{\mathrm{chain}}$ [CI] & (and vs.\ PPR) \\
+\hline
+Live ($N=40$) & $100.0\%$ & $78.5\%$ / $27.5\%$ & $95.0\%$ / $85.0\%$ ($K=18$) & $100.0\%$ & $100\%$ / $\mathbf{100.0\%}$ [91.2, 100] & $25.0\%$ / $0.0\%$ & $100\%$ / $100\%$ / $\mathbf{100.0\%}$ [91.2, 100] & $+100.0$ ($0.0$) \\
+Tier-S ($N=60$) & $100.0\%$ & $66.2\%$ / $21.7\%$ & $96.9\%$ / $88.3\%$ ($K=30$) & $100.0\%$ & $100\%$ / $\mathbf{100.0\%}$ [94.0, 100] & $100\%$ / $80.0\%$ & $100\%$ / $100\%$ / $\mathbf{100.0\%}$ [94.0, 100] & $+20.0$ ($0.0$) \\
+Tier-M ($N=60$) & $100.0\%$ & $61.8\%$ / $8.3\%$ & $96.9\%$ / $88.3\%$ ($K=46$) & $98.3\%$ & $99.6\%$ / $\mathbf{98.3\%}$ [91.1, 99.7] & $93.3\%$ / $78.3\%$ & $98.3\%$ / $99.6\%$ / $\mathbf{98.3\%}$ [91.1, 99.7] & $+20.0$ ($0.0$) \\
+Tier-L ($N=60$) & $100.0\%$ & $54.7\%$ / $1.7\%$ & $91.5\%$ / $75.0\%$ ($K=69$) & $88.3\%$ & $97.1\%$ / $\mathbf{93.3\%}$ [84.1, 97.4] & $46.7\%$ / $41.7\%$ & $81.7\%$ / $95.1\%$ / $\mathbf{86.7\%}$ [75.8, 93.1] & $+45.0$ ($-6.6$) \\
+Tier-XL ($N=60$) & $100.0\%$ & $53.6\%$ / $1.7\%$ & $85.8\%$ / $61.7\%$ ($K=98$) & $86.7\%$ & $97.5\%$ / $\mathbf{95.0\%}$ [86.3, 98.3] & $30.0\%$ / $30.0\%$ & $86.7\%$ / $96.1\%$ / $\mathbf{88.3\%}$ [77.8, 94.2] & $+58.3$ ($-6.7$) \\
+\hline
+\end{tabular}%
+}
+\end{table}
+% ============================================================================
+
+% ============================================================================
+\section{Experimental Protocol \& Key Comparative Findings}
+\label{sec:eval}
+% ============================================================================
+
+\subsection{Deterministic Benchmark Protocol (\texttt{runAcademicBenchmarkSuite})}
+To ensure complete transparency, the benchmark is implemented as a deterministic in-process execution engine in \texttt{server/graphStore.ts} (Mulberry32 PRNG seeds $42, 101, 202, 303, 404$). We evaluate five graph scales ($20, 48, 144, 384, 800$ nodes) containing intra-topic chains, cross-topic causal bridges ($S_a \to S_b \to S_c$), and hub nodes. For each tier, we sample $N \in [40, 60]$ non-hub $2$-hop and $3$-hop causal queries where intermediate bridge nodes $m_1, m_2$ are never named in the prompt and $35\%$ of target endpoints are referenced only by ambiguous operational symptoms (e.g., \texttt{lat\_45ms anomaly}). We measure \textbf{Path Node Coverage ($\mathrm{Cov}_{\mathrm{path}}$)} (fraction of gold path nodes present in the prompt) and \textbf{Complete Causal-Chain Recovery ($\mathrm{Acc}_{\mathrm{chain}}$)} (percentage of queries where every node in the chain is simultaneously present).
+
+% ============================================================================
+\begin{table}[!htbp]
+\centering
+\caption{\textbf{Component Ablation Study on Tier-L} ($|V|=384, k=24, N=60$ Queries, Measured in \texttt{runAcademicBenchmarkSuite}). Isolates the impact of Upgrade~1 (Entity-Anchor Index), Upgrade~2 (Bidirectional 2-Hop Bridge Closure), and Upgrade~3 (Subgraph Projection).}
+\label{tab:ablation}
+\vspace{4pt}
+\renewcommand{\arraystretch}{1.28}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|c|c|c|c|c|c|}
+\hline
+\textbf{Summary-Paging Architecture Variant (Tier-L, $384$ Nodes, $k=24$)} & \textbf{Active Tok} & \textbf{Sub-Topic Route} & \textbf{Intra-Topic} & \textbf{Cross-Topic} & \textbf{Overall $\mathrm{Acc}_{\mathrm{chain}}$ [95\% CI]} & \textbf{McNemar $p$} \\
+\hline
+\textbf{EngramGraph v2 (Full: Entity Anchors + 2-Hop Bridge + Projection)} & $\mathbf{1,743}$ & $\mathbf{81.7\%}$ & $\mathbf{90.0\%}$ & $\mathbf{86.7\%}$ & $\mathbf{86.7\%}$ [75.8, 93.1] & ref. \\
+w/o Subgraph Projection (Mount All $16$ Nodes/Sub-Topic Uncompressed) & $1,853$ & $81.7\%$ & $88.4\%$ & $86.7\%$ & $\mathbf{86.7\%}$ [75.8, 93.1] & $p=1.00$ (n.s.) \\
+w/o 2-Hop Bridge-Node Closure (Entity Anchors ON, Bridge BFS OFF) & $1,698$ & $81.7\%$ & $90.0\%$ & $68.3\%$ & $\mathbf{68.3\%}$ [55.8, 78.7] & $p=0.0039$ \\
+\textbf{EngramGraph v1 (Naive 2-Sentence Summary Only --- No Upgrades)} & $1,640$ & $46.7\%$ & $50.0\%$ & $35.0\%$ & $\mathbf{41.7\%}$ [30.1, 54.3] & $p<0.0001$ \\
+Summary Index Only (No Sub-Graph Paging, $\mathcal{M}_a = \emptyset$) & $1,008$ & $81.7\%$ & $0.0\%$ & $0.0\%$ & $\mathbf{0.0\%}$ [0.0, 6.0] & $p<0.0001$ \\
+\hline
+\end{tabular}%
+}
+\end{table}
+% ============================================================================
+
+\subsection{What This Study Finds Across Retrieval Paradigms (Tables~\ref{tab:tokens}--\ref{tab:ablation})}
+\begin{enumerate}
+  \setlength{\itemsep}{2pt}\setlength{\parskip}{0pt}
+  \item \textbf{Finding 1 --- Small Graphs ($|V| \le 144$) Do Not Need Sub-Graph Paging:} At Live Workspace ($20$ nodes, $500$ compact tokens), Tier-S ($48$ nodes, $1,200$ tokens), and Tier-M ($144$ nodes, $3,600$ tokens), the entire compact graph easily fits inside standard prompt budgets with $100.0\%$ path coverage. At these scales, two-call summary routing consumes $30\%$--$134\%$ of the full compact graph's tokens, making direct Compact Full Context the simplest and most accurate choice.
+  \item \textbf{Finding 2 --- Flat Lexical Top-$K$ Fails on Multi-Hop Causal Chains at Scale:} While Flat Top-$K=5$ ($125$ tokens) recovers $53.6\%$--$78.5\%$ of individual path nodes (typically the named endpoints $u$ and $v$), its complete-chain recovery collapses to $1.7\%$ on Tier-L and Tier-XL because unnamed intermediate bridge nodes share no query keywords. Even when Budget-Matched Top-$K$ is given the exact same token budget as EngramGraph v2 ($K=69$ at Tier-L, $K=98$ at Tier-XL), it reaches only $75.0\%$ and $61.7\%$ complete-chain recovery ($-11.7$ and $-26.6$~pp below EngramGraph v2).
+  \item \textbf{Finding 3 --- Naive Summary Paging Collapses at Scale, Whereas Anchor + Bridge Upgrades Preserve $86.7\%$--$88.3\%$ Chain Recovery:} Naive prose summary paging (v1) drops to $41.7\%$ (Tier-L) and $30.0\%$ (Tier-XL). Adding Entity-Anchor Indexing and Bidirectional Bridge Closure (v2) recovers $+45.0$ and $+58.3$~pp respectively, achieving $95.1\%$--$96.1\%$ node coverage and $86.7\%$--$88.3\%$ complete-chain recovery while reducing single-call active tokens by $81.8\%$--$87.7\%$ compared to Compact Full Context.
+  \item \textbf{Finding 4 --- Global PPR Excels at Read-Only Retrieval, Whereas Partitioned Paging Enables Multi-Agent Write Isolation:} Global PPR over the unpartitioned adjacency matrix achieves $93.3\%$ (Tier-L) and $95.0\%$ (Tier-XL) complete-chain recovery—outperforming EngramGraph v2 by $6.6$--$6.7$~pp because global random walks avoid Stage-1 partition routing misses on ambiguous symptom queries. However, PPR requires holding the full graph in memory per query and outputs an unstructured node set without ownership boundaries.
+\end{enumerate}
+
+% ============================================================================
+\section{Application Guidelines: Choosing a Graph Memory Architecture}
+% ============================================================================
+Table~\ref{tab:guidelines} synthesizes our empirical findings into a practical decision matrix for engineering teams building single-agent or multi-agent systems over MCP knowledge graphs.
+
+% ============================================================================
+\begin{table}[!htbp]
+\centering
+\caption{\textbf{Practical Application Matrix: Selecting a Graph Memory Paradigm Based on Workload Characteristics.}}
+\label{tab:guidelines}
+\vspace{4pt}
+\renewcommand{\arraystretch}{1.28}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+\textbf{Workload Regime / Application Scenario} & \textbf{Recommended Architecture} & \textbf{Active Token Cost} & \textbf{Multi-Hop Recovery} & \textbf{Primary Engineering Rationale} \\
+\hline
+Small Project / Microservice ($|V| \le 150$ nodes) & \textbf{Compact Full Context} ($25$t/node) & $500$--$3,600$ tok & $\mathbf{100.0\%}$ & Entire compact graph fits in prompt; zero routing complexity. \\
+Single-Hop Entity Lookup / Strict Token Cap ($<200$t) & \textbf{Flat Lexical Top-$K$} ($K=5$) & $125$ tok & $1.7\%$--$27.5\%$ & Cheapest baseline when queries only inspect isolated nodes. \\
+Large Read-Only Knowledge Base ($|V| \ge 350$, 1 Agent) & \textbf{Global PPR} (HippoRAG-style) & $1,743$--$2,462$ tok & $\mathbf{93.3\%}$--$\mathbf{95.0\%}$ & Global random walk avoids partition routing errors on read-only QA. \\
+Large Concurrent Multi-Agent Workspace ($|V| \ge 350$, $N \ge 2$ Agents) & \textbf{EngramGraph v2} (Anchors + Bridges) & $1,743$--$2,462$ tok ($-82\%$ to $-88\%$) & $\mathbf{86.7\%}$--$\mathbf{88.3\%}$ ($95\%$--$96\%$ Cov) & Provides domain sub-topic leases, OCC write isolation, and $+26.6$ pp over Top-$K$. \\
+\hline
+\end{tabular}%
+}
+\end{table}
+% ============================================================================
+
+\textbf{Limitations \& Future Directions:} (1)~Our in-process benchmark evaluates deterministic graph retrieval coverage ($\mathrm{Cov}_{\mathrm{path}}$ and $\mathrm{Acc}_{\mathrm{chain}}$) rather than paid LLM generation calls; (2)~because flat index tokens grow linearly as $\mathcal{T}_{\mathrm{idx}} = 42k$, scaling beyond $k > 60$ sub-topics ($|V| > 1,500$ nodes) requires either a two-level hierarchical domain directory ($\mathcal{O}(\sqrt{k})$) or server-side anchor pre-filtering so the agent does not read all $k$ summaries in Call~1; and (3)~combining Global PPR seed scoring with EngramGraph's sub-topic lease mounting is a promising hybrid direction to close the remaining $6.7$~pp routing gap while preserving OCC write isolation.
+
+\begin{thebibliography}{99}
+\small
+\bibitem{packer2023memgpt}
+C. Packer et al., ``MemGPT: Towards LLMs as Operating Systems,'' \emph{arXiv:2310.08560}, 2023.
+
+\bibitem{edge2024graphrag}
+D. Edge et al., ``From Local to Global: A Graph RAG Approach to Query-Focused Summarization,'' \emph{arXiv:2404.16130}, 2024.
+
+\bibitem{sarthi2024raptor}
+P. Sarthi et al., ``RAPTOR: Recursive Abstractive Processing for Tree-Organized Retrieval,'' in \emph{Proc. ICLR}, 2024.
+
+\bibitem{gutierrez2024hipporag}
+B. J. Guti{\'e}rrez et al., ``HippoRAG: Neurobiologically Inspired Long-Term Memory for LLMs,'' in \emph{Proc. NeurIPS}, 2024.
+
+\bibitem{guo2024lightrag}
+Z. Guo et al., ``LightRAG: Simple and Fast Retrieval-Augmented Generation,'' \emph{arXiv:2410.05779}, 2024.
+
+\bibitem{chhikara2025mem0}
+P. Chhikara et al., ``Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory,'' \emph{arXiv:2504.19413}, 2025.
+
+\bibitem{rasmussen2025zep}
+P. Rasmussen et al., ``Zep: A Temporal Knowledge Graph Architecture for Agent Memory,'' \emph{arXiv:2501.13956}, 2025.
+
+\bibitem{anthropic2024mcp}
+Anthropic, ``Model Context Protocol (MCP) Specification and Reference Knowledge Graph Server,'' 2024.
+\end{thebibliography}
+
+\end{document}

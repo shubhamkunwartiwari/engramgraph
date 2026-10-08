@@ -550,6 +550,27 @@ async function startServer() {
     }
   });
 
+  // 28. Academic Research Benchmark Suite ($0 Empirical Evaluation)
+  app.get('/api/benchmark', (_req, res) => {
+    try {
+      res.json(engine.runAcademicBenchmarkSuite());
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Benchmark failed' });
+    }
+  });
+
+  app.post('/api/benchmark/run', (_req, res) => {
+    try {
+      const results = engine.runAcademicBenchmarkSuite();
+      res.json({
+        results,
+        state: engine.getState(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Benchmark execution failed' });
+    }
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },

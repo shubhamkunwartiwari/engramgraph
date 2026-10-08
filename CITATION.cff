@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use this benchmark suite or EngramGraph in your research or software, please cite it as below."
+type: software
+title: "When Does Sub-Graph Paging Help? An Empirical Comparison of Full-Context, Top-K, Personalized PageRank, and Summary-Indexed Graph Memory for Multi-Agent Systems"
+authors:
+  - family-names: "Tiwary"
+    given-names: "Shubham Kunwar"
+    email: "shubhamkunwartiwari@gmail.com"
+    orcid: "https://orcid.org/0009-0004-8262-7647"
+    affiliation: "Department of Artificial Intelligence and Data Science"
+doi: 10.5281/zenodo.23250573
+version: 4.2.0
+url: "https://doi.org/10.5281/zenodo.23250573"
+repository-code: "https://github.com/shubhamkunwartiwari/engramgraph"
+date-released: 2026-10-08
+license: MIT
+keywords:
+  - multi-agent-systems
+  - graph-memory
+  - personalized-pagerank
+  - hipporag
+  - model-context-protocol
+  - context-paging
+  - optimistic-concurrency-control
+  - large-language-models
+preferred-citation:
+  type: article
+  title: "When Does Sub-Graph Paging Help? An Empirical Comparison of Full-Context, Top-K, Personalized PageRank, and Summary-Indexed Graph Memory for Multi-Agent Systems"
+  authors:
+    - family-names: "Tiwary"
+      given-names: "Shubham Kunwar"
+      orcid: "https://orcid.org/0009-0004-8262-7647"
+      affiliation: "Department of Artificial Intelligence and Data Science"
+  year: 2026
+  doi: 10.5281/zenodo.23250573
+  url: "https://doi.org/10.5281/zenodo.23250573"
