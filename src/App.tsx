@@ -54,6 +54,26 @@ import {
   OFFICIAL_PAPER_BIBTEX,
   generateLatexPaper,
 } from './utils/researchPaperGenerator.ts';
+import {
+  loadBrowserFallbackState,
+  resetBrowserFallbackState,
+  browserCheckoutSubtopic,
+  browserReleaseSubtopic,
+  browserReleaseAllLeases,
+  browserSwitchAgentModel,
+  browserCreateSubtopic,
+  browserMutateSubtopic,
+  browserRunAgentTask,
+  browserSwitchWorkspace,
+  browserCreateWorkspace,
+  browserIngestDocument,
+  browserRegisterCustomModel,
+  browserCreateCustomAgent,
+  browserDeleteAgent,
+  browserSaveWorkflow,
+  browserDeleteWorkflow,
+  browserHandleMcp,
+} from './utils/clientGraphFallback.ts';
 
 type ActiveView = 'home' | 'readme' | 'paper' | 'workflows' | 'builder' | 'sdk' | 'activity';
 
@@ -199,12 +219,17 @@ export default function App() {
   const fetchGraphState = useCallback(async () => {
     try {
       const res = await fetch('/api/graph/state');
-      if (!res.ok) throw new Error('Failed to load graph state');
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Using embedded browser graph engine');
+      }
       const data = (await res.json()) as GraphMemoryState;
       setState(data);
       setError(null);
-    } catch (err: any) {
-      setError(err.message || 'Could not load persistent memory graph');
+    } catch {
+      const fallback = loadBrowserFallbackState();
+      setState(fallback);
+      setError(null);
     } finally {
       setLoading(false);
     }
@@ -256,15 +281,23 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ workspaceId }),
       });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to switch workspace');
       setState(data.state);
       setSelectedAgentId(data.state.agents[0]?.id || '');
       setSelectedSubtopicId(data.state.subtopics[0]?.id || null);
       setHighlightedPathId(null);
       triggerToast(`Switched to [${data.state.rootGraphName}].`);
-    } catch (err: any) {
-      triggerToast(`Error: ${err.message}`);
+    } catch {
+      const nextState = browserSwitchWorkspace(workspaceId);
+      setState(nextState);
+      setSelectedAgentId(nextState.agents[0]?.id || '');
+      setSelectedSubtopicId(nextState.subtopics[0]?.id || null);
+      setHighlightedPathId(null);
+      triggerToast(`Switched to [${nextState.rootGraphName}].`);
     }
   };
 
@@ -273,19 +306,32 @@ export default function App() {
     description: string;
     template: 'blank' | 'enterprise_sample';
   }) => {
-    const res = await fetch('/api/workspaces/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to create workspace');
-    setState(data.state);
-    setSelectedAgentId(data.state.agents[0]?.id || '');
-    setSelectedSubtopicId(data.state.subtopics[0]?.id || null);
-    setHighlightedPathId(null);
-    setActiveView('home');
-    triggerToast(`Created project [${data.state.rootGraphName}].`);
+    try {
+      const res = await fetch('/api/workspaces/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
+      const data = await res.json();
+      setState(data.state);
+      setSelectedAgentId(data.state.agents[0]?.id || '');
+      setSelectedSubtopicId(data.state.subtopics[0]?.id || null);
+      setHighlightedPathId(null);
+      setActiveView('home');
+      triggerToast(`Created project [${data.state.rootGraphName}].`);
+    } catch {
+      const nextState = browserCreateWorkspace(payload);
+      setState(nextState);
+      setSelectedAgentId(nextState.agents[0]?.id || '');
+      setSelectedSubtopicId(nextState.subtopics[0]?.id || null);
+      setHighlightedPathId(null);
+      setActiveView('home');
+      triggerToast(`Created project [${nextState.rootGraphName}].`);
+    }
   };
 
   const handleIngestDocument = async (payload: {
@@ -293,24 +339,39 @@ export default function App() {
     rawText: string;
     agentId: string;
   }) => {
-    const res = await fetch('/api/graph/ingest-document', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Document ingestion failed');
-    setState(data.state);
-    if (data.createdSubtopics?.[0]) {
-      setSelectedSubtopicId(data.createdSubtopics[0].id);
+    try {
+      const res = await fetch('/api/graph/ingest-document', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
+      const data = await res.json();
+      setState(data.state);
+      if (data.createdSubtopics?.[0]) {
+        setSelectedSubtopicId(data.createdSubtopics[0].id);
+      }
+      if (data.createdPath) {
+        setHighlightedPathId(data.createdPath.id);
+      }
+      setActiveView('home');
+      triggerToast(
+        `Split "${payload.documentTitle}" into ${data.createdSubtopics.length} sub-topic bubbles.`
+      );
+    } catch {
+      const data = browserIngestDocument(payload);
+      setState(data.state);
+      if (data.createdSubtopics?.[0]) {
+        setSelectedSubtopicId(data.createdSubtopics[0].id);
+      }
+      setActiveView('home');
+      triggerToast(
+        `Split "${payload.documentTitle}" into ${data.createdSubtopics.length} sub-topic bubbles.`
+      );
     }
-    if (data.createdPath) {
-      setHighlightedPathId(data.createdPath.id);
-    }
-    setActiveView('home');
-    triggerToast(
-      `Split "${payload.documentTitle}" into ${data.createdSubtopics.length} sub-topic bubbles.`
-    );
   };
 
   const handleSwitchAgentModel = async (agentId: string, modelId: string) => {
@@ -320,12 +381,17 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agentId, modelId }),
       });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Model switch failed');
       setState(data.state);
       triggerToast(`Switched to ${data.newModel} — 0 context lost.`);
-    } catch (err: any) {
-      triggerToast(`Error: ${err.message}`);
+    } catch {
+      const data = browserSwitchAgentModel(agentId, modelId);
+      setState(data.state);
+      triggerToast(`Switched to ${data.newModel} — 0 context lost.`);
     }
   };
 
@@ -340,13 +406,23 @@ export default function App() {
           reason: 'Pulled full sub-topic into active working memory',
         }),
       });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Checkout failed');
       setState(data.state);
       setSelectedSubtopicId(subtopicId);
       triggerToast(`Pulled [${data.subtopic?.name || subtopicId}] into ${activeAgent?.name}.`);
-    } catch (err: any) {
-      triggerToast(`Error: ${err.message}`);
+    } catch {
+      const data = browserCheckoutSubtopic(
+        agentId,
+        subtopicId,
+        'Pulled full sub-topic into active working memory'
+      );
+      setState(data.state);
+      setSelectedSubtopicId(subtopicId);
+      triggerToast(`Pulled [${data.subtopic?.name || subtopicId}] into ${activeAgent?.name}.`);
     }
   };
 
@@ -361,25 +437,40 @@ export default function App() {
           reason: 'Returned sub-topic back into FalkorDB graph storage',
         }),
       });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Release failed');
       setState(data.state);
       triggerToast(`Sent [${data.subtopic?.name || subtopicId}] back into the graph.`);
-    } catch (err: any) {
-      triggerToast(`Error: ${err.message}`);
+    } catch {
+      const data = browserReleaseSubtopic(
+        agentId,
+        subtopicId,
+        'Returned sub-topic back into FalkorDB graph storage'
+      );
+      setState(data.state);
+      triggerToast(`Sent [${data.subtopic?.name || subtopicId}] back into the graph.`);
     }
   };
 
   const handleReleaseAllLeases = async () => {
     try {
       const res = await fetch('/api/graph/release-all', { method: 'POST' });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
       const data = await res.json();
-      if (res.ok && data.state) {
+      if (data.state) {
         setState(data.state);
         triggerToast('All loaded sub-topics returned to the graph.');
       }
-    } catch (err: any) {
-      triggerToast(`Error: ${err.message}`);
+    } catch {
+      const nextState = browserReleaseAllLeases();
+      setState(nextState);
+      triggerToast('All loaded sub-topics returned to the graph.');
     }
   };
 
@@ -392,9 +483,9 @@ export default function App() {
     if (!promptToRun || isRunningTask || !activeAgent) return;
 
     setIsRunningTask(true);
+    const agentsToUse = customAgentIds || [activeAgent.id];
+    const swapTarget = customSwapModelId ?? midRunSwapModelId;
     try {
-      const agentsToUse = customAgentIds || [activeAgent.id];
-      const swapTarget = customSwapModelId ?? midRunSwapModelId;
       const res = await fetch('/api/agent/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -405,15 +496,28 @@ export default function App() {
           simulateMidRunModelSwitch: swapTarget ? { targetModelId: swapTarget } : undefined,
         }),
       });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Agent run failed');
       setState(data.state);
       setLatestRun(data.run);
       triggerToast(
         `Completed (${data.run.steps.length} steps across ${data.run.modelsUsed?.join(' → ')}).`
       );
-    } catch (err: any) {
-      triggerToast(`Error: ${err.message}`);
+    } catch {
+      const data = browserRunAgentTask({
+        taskPrompt: promptToRun,
+        agentIds: agentsToUse,
+        autoEvictOnFinish,
+        simulateMidRunModelSwitch: swapTarget ? { targetModelId: swapTarget } : undefined,
+      });
+      setState(data.state);
+      setLatestRun(data.run);
+      triggerToast(
+        `Completed (${data.run.steps.length} steps across ${data.run.modelsUsed?.join(' → ')}).`
+      );
     } finally {
       setIsRunningTask(false);
     }
@@ -434,14 +538,27 @@ export default function App() {
           contextBudgetTokens: customModelBudget,
         }),
       });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to register model');
       setState(data.state);
       setCustomModelId('');
       setCustomModelLabel('');
       triggerToast(`Added model [${data.model.label}].`);
-    } catch (err: any) {
-      triggerToast(`Error: ${err.message}`);
+    } catch {
+      const data = browserRegisterCustomModel({
+        id: customModelId.trim(),
+        label: customModelLabel.trim(),
+        provider: customModelProvider,
+        endpointRoute: customModelRoute.trim(),
+        contextBudgetTokens: customModelBudget,
+      });
+      setState(data.state);
+      setCustomModelId('');
+      setCustomModelLabel('');
+      triggerToast(`Added model [${data.model.label}].`);
     }
   };
 
@@ -459,31 +576,53 @@ export default function App() {
           modelId: newAgentModelId,
         }),
       });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create agent');
       setState(data.state);
       setSelectedAgentId(data.agent.id);
       setNewAgentName('');
       setNewAgentRole('');
       setNewAgentSpecialty('');
       triggerToast(`Created agent [${data.agent.name}].`);
-    } catch (err: any) {
-      triggerToast(`Error: ${err.message}`);
+    } catch {
+      const data = browserCreateCustomAgent({
+        name: newAgentName.trim(),
+        role: newAgentRole.trim(),
+        specialty: newAgentSpecialty.trim(),
+        modelId: newAgentModelId,
+      });
+      setState(data.state);
+      setSelectedAgentId(data.agent.id);
+      setNewAgentName('');
+      setNewAgentRole('');
+      setNewAgentSpecialty('');
+      triggerToast(`Created agent [${data.agent.name}].`);
     }
   };
 
   const handleDeleteAgent = async (agentId: string) => {
     try {
       const res = await fetch(`/api/agents/${agentId}`, { method: 'DELETE' });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not remove agent');
       setState(data.state);
       if (selectedAgentId === agentId && data.state.agents[0]) {
         setSelectedAgentId(data.state.agents[0].id);
       }
       triggerToast('Agent removed.');
-    } catch (err: any) {
-      triggerToast(`Error: ${err.message}`);
+    } catch {
+      const nextState = browserDeleteAgent(agentId);
+      setState(nextState);
+      if (selectedAgentId === agentId && nextState.agents[0]) {
+        setSelectedAgentId(nextState.agents[0].id);
+      }
+      triggerToast('Agent removed.');
     }
   };
 
@@ -500,14 +639,25 @@ export default function App() {
           stages: wfStages,
         }),
       });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to save workflow');
       setState(data.state);
       setWfName('');
       setWfDescription('');
       triggerToast(`Saved workflow [${data.workflow.name}].`);
-    } catch (err: any) {
-      triggerToast(`Error: ${err.message}`);
+    } catch {
+      const data = browserSaveWorkflow({
+        name: wfName.trim(),
+        description: wfDescription.trim(),
+        stages: wfStages,
+      });
+      setState(data.state);
+      setWfName('');
+      setWfDescription('');
+      triggerToast(`Saved workflow [${data.workflow.name}].`);
     }
   };
 
@@ -516,16 +666,30 @@ export default function App() {
     setRunningWorkflowId(workflowId);
     try {
       const res = await fetch(`/api/workflows/${workflowId}/run`, { method: 'POST' });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Workflow execution failed');
       setState(data.state);
       setLatestRun(data.run);
       setActiveView('home');
       triggerToast(
         `Workflow finished (${data.run.steps.length} steps across ${data.run.modelsUsed.join(' → ')}).`
       );
-    } catch (err: any) {
-      triggerToast(`Error: ${err.message}`);
+    } catch {
+      const wf = state?.workflows.find((w) => w.id === workflowId);
+      const data = browserRunAgentTask({
+        taskPrompt: wf?.description || wf?.name || 'Execute multi-stage workflow',
+        agentIds: wf?.stages.map((s) => s.agentId) || [activeAgent?.id || 'agent_atlas'],
+        autoEvictOnFinish: true,
+      });
+      setState(data.state);
+      setLatestRun(data.run);
+      setActiveView('home');
+      triggerToast(
+        `Workflow finished (${data.run.steps.length} steps across ${data.run.modelsUsed.join(' → ')}).`
+      );
     } finally {
       setRunningWorkflowId(null);
     }
@@ -534,13 +698,19 @@ export default function App() {
   const handleDeleteWorkflow = async (workflowId: string) => {
     try {
       const res = await fetch(`/api/workflows/${workflowId}`, { method: 'DELETE' });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
       const data = await res.json();
-      if (res.ok && data.state) {
+      if (data.state) {
         setState(data.state);
         triggerToast('Workflow removed.');
       }
-    } catch (err: any) {
-      triggerToast(`Error: ${err.message}`);
+    } catch {
+      const nextState = browserDeleteWorkflow(workflowId);
+      setState(nextState);
+      triggerToast('Workflow removed.');
     }
   };
 
@@ -551,16 +721,26 @@ export default function App() {
     createdByAgentId: string;
     initialNodes: Array<{ title: string; content: string; kind: MemoryNodeKind }>;
   }) => {
-    const res = await fetch('/api/graph/subtopic', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to create sub-topic');
-    setState(data.state);
-    setSelectedSubtopicId(data.subtopic.id);
-    triggerToast(`Created sub-topic [${data.subtopic.name}].`);
+    try {
+      const res = await fetch('/api/graph/subtopic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
+      const data = await res.json();
+      setState(data.state);
+      setSelectedSubtopicId(data.subtopic.id);
+      triggerToast(`Created sub-topic [${data.subtopic.name}].`);
+    } catch {
+      const data = browserCreateSubtopic(payload);
+      setState(data.state);
+      setSelectedSubtopicId(data.subtopic.id);
+      triggerToast(`Created sub-topic [${data.subtopic.name}].`);
+    }
   };
 
   const handleMutateSubtopic = async (payload: {
@@ -577,15 +757,24 @@ export default function App() {
     updatedSummary: string;
     commitMessage: string;
   }) => {
-    const res = await fetch('/api/graph/mutate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to mutate sub-topic');
-    setState(data.state);
-    triggerToast(`Updated [${data.subtopic.name}] to v${data.subtopic.version}.`);
+    try {
+      const res = await fetch('/api/graph/mutate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
+      const data = await res.json();
+      setState(data.state);
+      triggerToast(`Updated [${data.subtopic.name}] to v${data.subtopic.version}.`);
+    } catch {
+      const data = browserMutateSubtopic(payload);
+      setState(data.state);
+      triggerToast(`Updated [${data.subtopic.name}] to v${data.subtopic.version}.`);
+    }
   };
 
   const handleConnectFalkor = async (url: string, graphName: string) => {
@@ -601,10 +790,22 @@ export default function App() {
   };
 
   const handleResetGraph = async () => {
-    const res = await fetch('/api/graph/reset', { method: 'POST' });
-    const data = await res.json();
-    if (res.ok && data.state) {
-      setState(data.state);
+    try {
+      const res = await fetch('/api/graph/reset', { method: 'POST' });
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok || !contentType.includes('application/json')) {
+        throw new Error('Fallback');
+      }
+      const data = await res.json();
+      if (data.state) {
+        setState(data.state);
+        setLatestRun(null);
+        setHighlightedPathId(null);
+        triggerToast('Graph reset to default.');
+      }
+    } catch {
+      const nextState = resetBrowserFallbackState();
+      setState(nextState);
       setLatestRun(null);
       setHighlightedPathId(null);
       triggerToast('Graph reset to default.');
@@ -654,15 +855,28 @@ export default function App() {
         },
         body: JSON.stringify(rpcPayload),
       });
-      const data = await res.json();
+      const contentType = res.headers.get('content-type') || '';
+      const data =
+        res.ok && contentType.includes('application/json')
+          ? await res.json()
+          : browserHandleMcp(rpcPayload, simIdeClient);
       if (data._stateSnapshot) {
         setState(data._stateSnapshot);
         delete data._stateSnapshot;
       }
       setLiveApiResponse(JSON.stringify(data, null, 2));
       triggerToast(`[${simIdeClient}] ran ${toolName || method}.`);
-    } catch (err: any) {
-      triggerToast(`MCP Error: ${err.message}`);
+    } catch {
+      const data = browserHandleMcp(
+        { jsonrpc: '2.0', id: Date.now(), method },
+        simIdeClient
+      );
+      if (data._stateSnapshot) {
+        setState(data._stateSnapshot);
+        delete data._stateSnapshot;
+      }
+      setLiveApiResponse(JSON.stringify(data, null, 2));
+      triggerToast(`[${simIdeClient}] ran ${toolName || method}.`);
     } finally {
       setIsCallingMcp(false);
     }

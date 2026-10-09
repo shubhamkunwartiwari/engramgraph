@@ -69,7 +69,9 @@ export const INITIAL_GRAPH_STATE: GraphMemoryState = {
   rootGraphDescription:
     'Production FalkorDB context graph decoupling corporate knowledge, sub-topics, and reasoning paths from individual LLMs.',
   falkorConnected: false,
-  falkorEndpoint: process.env.FALKORDB_URL || 'embedded://falkordb-cypher-engine',
+  falkorEndpoint:
+    (typeof process !== 'undefined' && process.env?.FALKORDB_URL) ||
+    'embedded://falkordb-cypher-engine',
   availableModels: structuredClone(SUPPORTED_AGENT_MODELS),
   workflows: structuredClone(DEFAULT_WORKFLOWS),
   subtopics: [
@@ -814,7 +816,9 @@ export function createBlankWorkspaceState(params: {
       params.description ||
       'Custom corporate multi-agent graph workspace with hierarchical sub-topic paging.',
     falkorConnected: false,
-    falkorEndpoint: process.env.FALKORDB_URL || 'embedded://falkordb-cypher-engine',
+    falkorEndpoint:
+      (typeof process !== 'undefined' && process.env?.FALKORDB_URL) ||
+      'embedded://falkordb-cypher-engine',
     availableModels: structuredClone(SUPPORTED_AGENT_MODELS),
     workflows: [],
     subtopics: [
