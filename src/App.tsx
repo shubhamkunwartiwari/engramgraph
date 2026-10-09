@@ -1029,16 +1029,21 @@ requests.post(f"{ENGRAM_URL}/api/v1/release", json={"agentId": AGENT_ID, "subtop
     <div className="min-h-screen flex flex-col theme-app">
       {/* Strict 3-Zone Top Bar Contract */}
       <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-3.5 border-b border-slate-500/15 theme-surface backdrop-blur">
-        {/* Zone 1: Single text element wordmark */}
+        {/* Zone 1: Brand mark with Node-E icon + wordmark */}
         <a
           href="#home"
           onClick={(e) => {
             e.preventDefault();
             setActiveView('home');
           }}
-          className="font-display text-lg font-bold tracking-tight whitespace-nowrap"
+          className="inline-flex items-center gap-2.5 font-display text-lg font-bold tracking-tight whitespace-nowrap group"
         >
-          EngramGraph
+          <img
+            src="/favicon.svg"
+            alt="EngramGraph Node E Logo"
+            className="w-7 h-7 rounded-lg shadow-sm transition-transform group-hover:scale-105"
+          />
+          <span>EngramGraph</span>
         </a>
 
         {/* Zone 2: Clean text navigation links */}

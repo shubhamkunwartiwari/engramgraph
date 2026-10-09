@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#070B12" />
+    </linearGradient>
+    <linearGradient id="edgeGrad" x1="16" y1="12" x2="50" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="55%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Rounded Dark Tile -->
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#bgGrad)" stroke="#10B981" stroke-width="2" stroke-opacity="0.35" />
+
+  <!-- Subtle Secondary Graph Cross-Edges -->
+  <g stroke="#34D399" stroke-width="1.6" stroke-opacity="0.28" stroke-dasharray="2.5 2.5">
+    <line x1="18" y1="14" x2="41" y2="32" />
+    <line x1="18" y1="50" x2="41" y2="32" />
+    <line x1="34" y1="14" x2="18" y2="32" />
+    <line x1="34" y1="50" x2="18" y2="32" />
+  </g>
+
+  <!-- Primary 'E' Graph Edges -->
+  <g stroke="url(#edgeGrad)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <!-- Vertical Spine -->
+    <line x1="18" y1="14" x2="18" y2="32" />
+    <line x1="18" y1="32" x2="18" y2="50" />
+    <!-- Top Horizontal Branch -->
+    <line x1="18" y1="14" x2="34" y2="14" />
+    <line x1="34" y1="14" x2="48" y2="14" />
+    <!-- Middle Horizontal Branch -->
+    <line x1="18" y1="32" x2="41" y2="32" />
+    <!-- Bottom Horizontal Branch -->
+    <line x1="18" y1="50" x2="34" y2="50" />
+    <line x1="34" y1="50" x2="48" y2="50" />
+  </g>
+
+  <!-- Graph Nodes Forming the 'E' -->
+  <!-- Spine Nodes -->
+  <circle cx="18" cy="14" r="5" fill="#0B0F17" stroke="#34D399" stroke-width="3.2" />
+  <circle cx="18" cy="14" r="2" fill="#A7F3D0" />
+
+  <circle cx="18" cy="32" r="5.2" fill="#0B0F17" stroke="#10B981" stroke-width="3.2" />
+  <circle cx="18" cy="32" r="2.2" fill="#6EE7B7" />
+
+  <circle cx="18" cy="50" r="5" fill="#0B0F17" stroke="#06B6D4" stroke-width="3.2" />
+  <circle cx="18" cy="50" r="2" fill="#A5F3FC" />
+
+  <!-- Top Bar Nodes -->
+  <circle cx="34" cy="14" r="3.8" fill="#0B0F17" stroke="#34D399" stroke-width="2.6" />
+  <circle cx="48" cy="14" r="5" fill="#10B981" stroke="#A7F3D0" stroke-width="2.4" />
+
+  <!-- Middle Bar Node -->
+  <circle cx="41" cy="32" r="5" fill="#06B6D4" stroke="#CFFAFE" stroke-width="2.4" />
+
+  <!-- Bottom Bar Nodes -->
+  <circle cx="34" cy="50" r="3.8" fill="#0B0F17" stroke="#06B6D4" stroke-width="2.6" />
+  <circle cx="48" cy="50" r="5" fill="#10B981" stroke="#A7F3D0" stroke-width="2.4" />
+</svg>
