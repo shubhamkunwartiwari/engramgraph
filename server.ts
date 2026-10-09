@@ -15,27 +15,25 @@ import {
   IdeClientType,
 } from './src/types/memory.ts';
 
-async function startServer() {
-  const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
+export const app = express();
+const engine = new GraphMemoryEngine();
 
-  app.use(express.json({ limit: '10mb' }));
-  app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header(
-      'Access-Control-Allow-Headers',
-      'Origin, X-Requested-With, Content-Type, Accept, X-Engram-Client, Authorization'
-    );
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    if (req.method === 'OPTIONS') {
-      res.sendStatus(200);
-      return;
-    }
-    next();
-  });
+app.use(express.json({ limit: '10mb' }));
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept, X-Engram-Client, Authorization'
+  );
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+    return;
+  }
+  next();
+});
 
-  const engine = new GraphMemoryEngine();
-
+function registerApiRoutes() {
   // 1. Get complete graph & multi-agent memory state
   app.get('/api/graph/state', (_req, res) => {
     try {
@@ -570,6 +568,12 @@ async function startServer() {
       res.status(500).json({ error: err.message || 'Benchmark execution failed' });
     }
   });
+}
+
+registerApiRoutes();
+
+async function bootStandaloneServer() {
+  const PORT = Number(process.env.PORT) || 3000;
 
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
@@ -590,4 +594,8 @@ async function startServer() {
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  bootStandaloneServer();
+}
+
+export default app;

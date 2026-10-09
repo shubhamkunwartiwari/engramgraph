@@ -27,7 +27,9 @@ import {
   estimateTokens,
 } from './initialGraphData.ts';
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const DATA_DIR = process.env.VERCEL
+  ? path.join('/tmp', 'engram_data')
+  : path.resolve(process.cwd(), 'data');
 const STATE_FILE = path.join(DATA_DIR, 'graph_memory.json');
 const WORKSPACES_DIR = path.join(DATA_DIR, 'workspaces');
 
